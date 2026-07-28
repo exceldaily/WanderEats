@@ -189,6 +189,20 @@ class RestaurantRepository {
         .eq('restaurant_id', restaurantId);
   }
 
+  Future<List<Restaurant>> fetchByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    try {
+      final rows = await _schema
+          .from('restaurants')
+          .select()
+          .inFilter('id', ids)
+          .isFilter('deleted_at', null);
+      return rows.map(Restaurant.fromJson).toList();
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
   Future<void> reportRestaurant({
     required String reporterId,
     required String restaurantId,

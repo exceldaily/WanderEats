@@ -17,10 +17,13 @@ import '../../features/lists/presentation/create_list_screen.dart';
 import '../../features/lists/presentation/list_details_screen.dart';
 import '../../features/map/presentation/map_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/restaurant_collection_screen.dart';
 import '../../features/recommendations/presentation/create_menu_screen.dart';
 import '../../features/recommendations/presentation/create_recommendation_screen.dart';
 import '../../features/restaurants/presentation/restaurant_details_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
@@ -155,6 +158,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/search',
         name: Routes.search,
         builder: (_, _) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/saved',
+        name: Routes.savedRestaurants,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) =>
+            const RestaurantCollectionScreen(kind: CollectionKind.saved),
+      ),
+      GoRoute(
+        path: '/visited',
+        name: Routes.visitedRestaurants,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) =>
+            const RestaurantCollectionScreen(kind: CollectionKind.visited),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: Routes.settings,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        name: Routes.editProfile,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const EditProfileScreen(),
       ),
     ],
   );

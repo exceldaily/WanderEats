@@ -78,6 +78,37 @@ class ProfileRepository {
     }
   }
 
+  Future<Map<String, dynamic>> fetchSettings(String userId) async {
+    final row = await _db('user_settings')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (row != null) return row;
+    await _db('user_settings').upsert({'user_id': userId});
+    return (await _db('user_settings')
+        .select()
+        .eq('user_id', userId)
+        .single());
+  }
+
+  Future<void> updateSettings(
+      String userId, Map<String, dynamic> patch) async {
+    try {
+      await _db('user_settings').update(patch).eq('user_id', userId);
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
+  /// Badges the user has earned, joined with definitions.
+  Future<List<Map<String, dynamic>>> earnedBadges(String userId) async {
+    final rows = await _db('user_badges')
+        .select('awarded_at, badges(slug, name, description, icon, category)')
+        .eq('user_id', userId)
+        .order('awarded_at', ascending: false);
+    return rows;
+  }
+
   Future<Profile> updateProfile(String userId, Map<String, dynamic> patch) async {
     try {
       final row = await _db('profiles')
