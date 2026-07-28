@@ -16,6 +16,8 @@ import '../../features/map/presentation/map_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recommendations/presentation/create_menu_screen.dart';
+import '../../features/restaurants/presentation/restaurant_details_screen.dart';
+import '../../features/tasters/presentation/taster_profile_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
 
@@ -112,8 +114,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
-      // Detail routes (restaurant, taster, list, search, ...) are added by
-      // Milestones 4-7 and push above the shell.
+      // Detail routes push above the shell.
+      GoRoute(
+        path: '/restaurant/:id',
+        name: Routes.restaurant,
+        builder: (_, state) =>
+            RestaurantDetailsScreen(restaurantId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/taster/:id',
+        name: Routes.taster,
+        builder: (_, state) =>
+            TasterProfileScreen(tasterId: state.pathParameters['id']!),
+      ),
     ],
   );
 });
