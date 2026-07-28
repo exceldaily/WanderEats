@@ -22,7 +22,7 @@ returns boolean language sql stable security definer set search_path = wanderbit
 $$;
 
 -- Recommendation visibility for the current viewer.
-create or replace function wanderbites.rec_visible(rec recommendations)
+create or replace function wanderbites.rec_visible(rec wanderbites.recommendations)
 returns boolean language sql stable security definer set search_path = wanderbites as $$
   select rec.deleted_at is null
     and not is_blocked_between(auth.uid(), rec.user_id)
@@ -36,7 +36,7 @@ returns boolean language sql stable security definer set search_path = wanderbit
     );
 $$;
 
-create or replace function wanderbites.list_visible(l lists)
+create or replace function wanderbites.list_visible(l wanderbites.lists)
 returns boolean language sql stable security definer set search_path = wanderbites as $$
   select l.deleted_at is null
     and (
