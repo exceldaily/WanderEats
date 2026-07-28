@@ -1,0 +1,78 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/routes.dart';
+import '../../../app/theme/wb_tokens.dart';
+import '../data/auth_repository.dart';
+
+/// First screen for signed-out users: brand moment + auth choices.
+/// Guests can skip straight into browsing.
+class WelcomeScreen extends ConsumerWidget {
+  const WelcomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(WbSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+              // Temporary text logo until final brand asset lands.
+              Text(
+                'WanderBites',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: WbSpacing.sm),
+              Text(
+                'Follow people with great taste.\nDiscover unforgettable places.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () async {
+                  try {
+                    await ref.read(authRepositoryProvider).signInWithGoogle();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(e.toString())));
+                    }
+                  }
+                },
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: WbSpacing.sm),
+              FilledButton.tonal(
+                onPressed: () => context.goNamed(Routes.register),
+                child: const Text('Sign up with email'),
+              ),
+              const SizedBox(height: WbSpacing.sm),
+              OutlinedButton(
+                onPressed: () => context.goNamed(Routes.signIn),
+                child: const Text('I already have an account'),
+              ),
+              const SizedBox(height: WbSpacing.md),
+              TextButton(
+                onPressed: () => context.goNamed(Routes.map),
+                child: const Text('Just browsing for now'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

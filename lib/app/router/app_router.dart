@@ -5,6 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/authentication/presentation/forgot_password_screen.dart';
+import '../../features/authentication/presentation/onboarding_screen.dart';
+import '../../features/authentication/presentation/register_screen.dart';
+import '../../features/authentication/presentation/sign_in_screen.dart';
+import '../../features/authentication/presentation/splash_screen.dart';
+import '../../features/authentication/presentation/welcome_screen.dart';
 import '../../features/discovery/presentation/discover_screen.dart';
 import '../../features/map/presentation/map_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
@@ -13,16 +19,59 @@ import '../../features/recommendations/presentation/create_menu_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
 
-/// Router lives in a provider so auth-driven redirects can be tested and the
-/// tree can rebuild on session changes.
+/// Routes that require a signed-in user; everything else supports guests.
+const _authRequiredPaths = {'/create', '/notifications'};
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefreshNotifier();
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/map',
+    initialLocation: '/splash',
     refreshListenable: refresh,
+    redirect: (context, state) {
+      final signedIn = _hasSession();
+      final path = state.uri.path;
+      if (!signedIn && _authRequiredPaths.contains(path)) {
+        return '/welcome';
+      }
+      if (signedIn &&
+          (path == '/welcome' || path == '/sign-in' || path == '/register')) {
+        return '/map';
+      }
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/splash',
+        name: Routes.splash,
+        builder: (_, _) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        name: Routes.welcome,
+        builder: (_, _) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/sign-in',
+        name: Routes.signIn,
+        builder: (_, _) => const SignInScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: Routes.register,
+        builder: (_, _) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: Routes.forgotPassword,
+        builder: (_, _) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        name: Routes.onboarding,
+        builder: (_, _) => const OnboardingScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => ShellScaffold(shell: shell),
         branches: [
@@ -63,11 +112,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
-      // Detail + auth routes are registered by their milestones and pushed
-      // above the shell. Placeholder-free by Definition of Done.
+      // Detail routes (restaurant, taster, list, search, ...) are added by
+      // Milestones 4-7 and push above the shell.
     ],
   );
 });
+
+bool _hasSession() {
+  try {
+    return Supabase.instance.client.auth.currentSession != null;
+  } catch (_) {
+    return false; // Supabase not initialized (missing env)
+  }
+}
 
 /// Bridges Supabase auth state changes into GoRouter refreshes.
 class _AuthRefreshNotifier extends ChangeNotifier {
@@ -76,7 +133,7 @@ class _AuthRefreshNotifier extends ChangeNotifier {
       _sub = Supabase.instance.client.auth.onAuthStateChange
           .listen((_) => notifyListeners());
     } catch (_) {
-      // Supabase not initialized (missing env): router works without auth.
+      // Supabase not initialized: router works without auth.
     }
   }
 
