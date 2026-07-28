@@ -1,0 +1,7 @@
+{
+  "SUPABASE_URL": "https://pfagkivkytrvbkhsulvo.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "<sb_publishable_... key from the shared OrbitStack Supabase project>",
+  "SUPABASE_SCHEMA": "wanderbites",
+  "GOOGLE_MAPS_API_KEY": "",
+  "APP_ENV": "development"
+}
