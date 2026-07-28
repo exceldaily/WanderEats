@@ -45,21 +45,27 @@ Fill in:
 
 Migrations in `supabase/migrations/` run in numeric order against the shared project (already applied there). For a brand new project: run 0001 through 0005 in the SQL editor, then `supabase/seed/seed.sql` for development data.
 
-## 5. Google Maps key
+## 5. Google Cloud project (already provisioned)
 
-1. Google Cloud console -> create/select project -> enable "Maps SDK for Android"
-2. Create an API key, restrict it to Android apps with package `com.wanderbites.app` plus your SHA-1 (`cd android && ./gradlew signingReport`)
-3. Put the key in two places:
+Project `wanderbites-503816` exists in the exceldaily7 Google account with:
+- OAuth consent screen configured (External, app name WanderBites)
+- OAuth 2.0 Web client "WanderBites Web Client" with redirect URI `https://pfagkivkytrvbkhsulvo.supabase.co/auth/v1/callback`, credentials enabled as the Google provider in the shared Supabase project (Google sign-in works end to end)
+- Firebase attached to the same project (Spark/free plan), Android app registered as `com.wanderbites.app`
+
+`android/app/google-services.json` is gitignored; pull a fresh copy from the Firebase console (Project settings -> your apps -> google-services.json) if it's missing on a new machine. Without it the app still builds and runs with the debug-log analytics and no-op push fallbacks.
+
+## 6. Google Maps key (the one manual step left)
+
+Maps SDK for Android could not be enabled without a billing account attached to `wanderbites-503816` — that's a payment step only the account owner can complete.
+
+1. https://console.cloud.google.com/billing?project=wanderbites-503816 -> attach or create a billing account
+2. https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com?project=wanderbites-503816 -> Enable
+3. https://console.cloud.google.com/google/maps-apis/credentials?project=wanderbites-503816 -> create an API key, restrict it to Android apps with package `com.wanderbites.app` plus your release SHA-1 (get it with `cd android && ./gradlew signingReport`, or from Firebase project settings once the app is registered)
+4. Put the key in two places:
    - `dart_defines/dev.json` -> GOOGLE_MAPS_API_KEY (runtime feature checks)
    - `android/local.properties` -> `MAPS_API_KEY=...` (native SDK)
 
-## 6. Firebase (when ready)
-
-```bash
-dart pub global activate flutterfire_cli
-flutterfire configure   # package com.wanderbites.app
-```
-Then uncomment firebase_* in pubspec.yaml. Until then the app uses the built-in dev fallbacks (console analytics, no push).
+Everything else in the app works without this; only the map tab shows a setup notice until it's done.
 
 ## 7. Run
 

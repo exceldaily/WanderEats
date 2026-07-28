@@ -24,3 +24,12 @@ Running log of decisions made while building, with reasoning. Newest last.
 - **Offline scope shipped**: last map result cached (shared_preferences JSON), recommendation drafts persisted, recent searches persisted. Drift remains in the dependency set for the richer cache when real usage justifies it.
 - **Feedback dedupe**: one feedback row per user per recommendation, upsert semantics so users can revise their rating; RLS rejects self-rating (probe-verified).
 - **Notifications**: created exclusively by database triggers (no client insert policy); tap targets resolved server-data-first (rec -> its restaurant, list events -> the list).
+
+## 2026-07-28 (post-launch: cloud service wiring)
+
+- **Release signing**: keystore generated with a random password, wired via android/key.properties (gitignored) with debug-signing fallback for machines without it.
+- **Google Cloud project**: `wanderbites-503816`, separate from OrbitStack's own tooling projects. OAuth consent screen is External (any Google account, not just an org). Google Sign-In client is a Web application type (not Android) because Supabase's OAuth flow is the server-side redirect handler, not the native Android SDK.
+- **Google Maps SDK blocked on billing**: enabling it redirected straight into Google's billing-enablement flow, which needs a payment method. That step is left for the account owner; everything else (project, OAuth, Firebase) was completed without touching billing.
+- **Firebase reuses the same GCP project** (`wanderbites-503816`) rather than a separate Firebase-only project, so Google Cloud IAM and the OAuth client are shared. Analytics account: existing "Brads Websites" account, not a new one.
+- **Firebase Android app package is `com.wanderbites.app`**, matching applicationId. `google-services.json` is gitignored (like MAPS_API_KEY); the google-services Gradle plugin only applies when that file is present, so a fresh clone without it still builds.
+- **Crashlytics wiring**: FlutterError.onError and PlatformDispatcher.instance.onError both route to Crashlytics, but only after Firebase.initializeApp() succeeds; a missing/misconfigured Firebase falls back to default Flutter error handling, never a crash-on-boot.

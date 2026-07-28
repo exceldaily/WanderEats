@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/push/push_service.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile.dart';
 import '../data/auth_repository.dart';
@@ -30,7 +33,13 @@ class MyProfileController extends AsyncNotifier<Profile?> {
   Future<Profile?> build() async {
     final session = ref.watch(sessionProvider);
     if (session == null) return null;
-    return ref.read(profileRepositoryProvider).fetchProfile(session.user.id);
+    final profile =
+        await ref.read(profileRepositoryProvider).fetchProfile(session.user.id);
+    // Restored sessions also need their device token kept current.
+    if (profile != null) {
+      unawaited(ref.read(pushServiceProvider).enableForCurrentUser());
+    }
+    return profile;
   }
 
   Future<void> completeOnboarding({
@@ -53,6 +62,7 @@ class MyProfileController extends AsyncNotifier<Profile?> {
           avatarUrl: avatarUrl,
         );
     state = AsyncData(profile);
+    unawaited(ref.read(pushServiceProvider).enableForCurrentUser());
   }
 
   Future<void> updateProfile(Map<String, dynamic> patch) async {

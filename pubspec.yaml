@@ -52,13 +52,14 @@ dependencies:
   url_launcher: ^6.3.0
   share_plus: ^12.0.0
 
-  # Firebase (push / analytics / crashlytics) is wired behind interfaces in
-  # core/services with no-op dev fallbacks. Uncomment after running
-  # `flutterfire configure` with a real Firebase project (see SETUP.md):
-  # firebase_core: ^4.0.0
-  # firebase_messaging: ^16.0.0
-  # firebase_analytics: ^12.0.0
-  # firebase_crashlytics: ^5.0.0
+  # Firebase (push / analytics / crashlytics), behind interfaces in
+  # core/services. android/app/google-services.json is present (project
+  # wanderbites-503816); real implementations activate at runtime whenever
+  # that file exists, dev no-op fallback otherwise.
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
+  firebase_analytics: ^12.0.0
+  firebase_crashlytics: ^5.0.0
 
 dev_dependencies:
   flutter_test:

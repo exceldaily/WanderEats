@@ -50,6 +50,8 @@ class NoopPushService implements PushService {
   }
 }
 
+/// Swapped for [FirebasePushService] in main.dart once Firebase has
+/// initialized successfully; falls back to the no-op otherwise.
 final pushServiceProvider = Provider<PushService>((ref) {
   return NoopPushService(ref.watch(wbSchemaProvider));
 });

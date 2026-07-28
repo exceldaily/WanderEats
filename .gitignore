@@ -47,3 +47,4 @@ app.*.map.json
 # Local build configuration (real keys live only on this machine)
 dart_defines/dev.json
 dart_defines/prod.json
+android/app/google-services.json
