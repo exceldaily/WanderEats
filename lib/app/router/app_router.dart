@@ -12,10 +12,14 @@ import '../../features/authentication/presentation/sign_in_screen.dart';
 import '../../features/authentication/presentation/splash_screen.dart';
 import '../../features/authentication/presentation/welcome_screen.dart';
 import '../../features/discovery/presentation/discover_screen.dart';
+import '../../features/discovery/presentation/search_screen.dart';
+import '../../features/lists/presentation/create_list_screen.dart';
+import '../../features/lists/presentation/list_details_screen.dart';
 import '../../features/map/presentation/map_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recommendations/presentation/create_menu_screen.dart';
+import '../../features/recommendations/presentation/create_recommendation_screen.dart';
 import '../../features/restaurants/presentation/restaurant_details_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
 import 'routes.dart';
@@ -126,6 +130,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.taster,
         builder: (_, state) =>
             TasterProfileScreen(tasterId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/list/:id',
+        name: Routes.list,
+        builder: (_, state) =>
+            ListDetailsScreen(listId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/create/recommendation',
+        name: Routes.createRecommendation,
+        redirect: (context, state) =>
+            _hasSession() ? null : '/welcome',
+        builder: (_, _) => const CreateRecommendationScreen(),
+      ),
+      GoRoute(
+        path: '/create/list',
+        name: Routes.createList,
+        redirect: (context, state) =>
+            _hasSession() ? null : '/welcome',
+        builder: (_, _) => const CreateListScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        name: Routes.search,
+        builder: (_, _) => const SearchScreen(),
       ),
     ],
   );

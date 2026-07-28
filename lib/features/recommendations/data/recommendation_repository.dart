@@ -88,6 +88,20 @@ class RecommendationRepository {
     }
   }
 
+  /// Server-side badge evaluation for the current user. Returns names of any
+  /// newly awarded badges.
+  Future<List<String>> awardBadges() async {
+    try {
+      final rows = await _schema.rpc<List<dynamic>>('check_and_award_badges');
+      return rows
+          .cast<Map<String, dynamic>>()
+          .map((b) => b['name'] as String)
+          .toList();
+    } on PostgrestException {
+      return const []; // badge failures never block publishing
+    }
+  }
+
   // --- feedback ------------------------------------------------------------
 
   /// Returns rating counts for a recommendation, plus the caller's own rating.

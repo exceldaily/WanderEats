@@ -71,6 +71,27 @@ class RestaurantRepository {
     }
   }
 
+  /// Simple name search for pickers (create flows). Universal search uses
+  /// the grouped search_all RPC instead.
+  Future<List<RestaurantMarker>> searchByName(String query,
+      {int limit = 20}) async {
+    try {
+      final rows = await _schema
+          .from('restaurants')
+          .select(
+              'id, name, price_level, rec_count, save_count, score, cover_photo_url, city_id')
+          .ilike('name', '%$query%')
+          .isFilter('deleted_at', null)
+          .order('rec_count', ascending: false)
+          .limit(limit);
+      return rows
+          .map((r) => RestaurantMarker.fromJson({...r, 'lat': 0.0, 'lng': 0.0}))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
   Future<Restaurant> fetchRestaurant(String id) async {
     try {
       final row =
