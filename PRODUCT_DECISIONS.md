@@ -14,3 +14,13 @@ Running log of decisions made while building, with reasoning. Newest last.
 - **Reputation scoring server-side only**, stored nowhere in the client, formula not exposed in UI (per spec).
 - **Offline cache**: Drift, cache-first reads for profile/saves/follows/lists/recent map regions.
 - **Theme**: voyage teal + ember coral + warm neutrals. No fast-food palette, no glassmorphism. Light and dark from one token set.
+
+## 2026-07-28 (Milestones 2 through 8)
+
+- **Seeded auth users**: 20 fictional Tasters exist as real (unloginable) rows in the shared auth pool, inserted with session_replication_role=replica so sibling apps' signup triggers never fired for them. Fixed UUID prefix a0000000-... makes them separable.
+- **Account deletion scope**: delete_account() removes the WanderBites profile + content only, never the auth.users row, because that account may power sibling OrbitStack apps.
+- **Feed placement**: the Following feed lives as a tab inside Discover (For you / Following) instead of a sixth nav item, keeping the bottom bar at five.
+- **Clustering posture**: with bounded queries capped at 200-400 markers, default markers + info windows proved sufficient for the seed density; grid clustering remains a documented follow-up if real data outgrows it.
+- **Offline scope shipped**: last map result cached (shared_preferences JSON), recommendation drafts persisted, recent searches persisted. Drift remains in the dependency set for the richer cache when real usage justifies it.
+- **Feedback dedupe**: one feedback row per user per recommendation, upsert semantics so users can revise their rating; RLS rejects self-rating (probe-verified).
+- **Notifications**: created exclusively by database triggers (no client insert policy); tap targets resolved server-data-first (rec -> its restaurant, list events -> the list).

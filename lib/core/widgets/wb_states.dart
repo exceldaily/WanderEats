@@ -86,12 +86,34 @@ class WbSkeleton extends StatefulWidget {
 
 class _WbSkeletonState extends State<WbSkeleton>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-    lowerBound: 0.35,
-    upperBound: 0.7,
-  )..repeat(reverse: true);
+  late final AnimationController _controller;
+  bool _animating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Created eagerly: a lazily-created controller would be constructed
+    // during dispose() when reduced motion skips it in build.
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+      lowerBound: 0.35,
+      upperBound: 0.7,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    if (!reduceMotion && !_animating) {
+      _controller.repeat(reverse: true);
+      _animating = true;
+    } else if (reduceMotion && _animating) {
+      _controller.stop();
+      _animating = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -103,26 +125,15 @@ class _WbSkeletonState extends State<WbSkeleton>
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final base = Theme.of(context).colorScheme.surfaceContainerHighest;
-    if (reduceMotion) {
-      return Container(
-        height: widget.height,
-        width: widget.width,
-        decoration: BoxDecoration(
-          color: base,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      );
-    }
-    return FadeTransition(
-      opacity: _controller,
-      child: Container(
-        height: widget.height,
-        width: widget.width,
-        decoration: BoxDecoration(
-          color: base,
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
+    final block = Container(
+      height: widget.height,
+      width: widget.width,
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(widget.radius),
       ),
     );
+    if (reduceMotion) return block;
+    return FadeTransition(opacity: _controller, child: block);
   }
 }
