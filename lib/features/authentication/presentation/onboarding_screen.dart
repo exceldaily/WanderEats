@@ -60,8 +60,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _checkUsername(String value) {
     _usernameDebounce?.cancel();
+    // Normalize as they type: usernames are lowercase by definition, so
+    // typing "Brad" becomes "brad" instead of silently failing validation.
+    final normalized = value.toLowerCase().replaceAll(' ', '_');
+    if (normalized != value) {
+      _username.value = _username.value.copyWith(
+        text: normalized,
+        selection: TextSelection.collapsed(offset: normalized.length),
+      );
+    }
     setState(() => _usernameAvailable = null);
-    final username = value.trim();
+    final username = normalized.trim();
     if (!RegExp(r'^[a-z0-9_]{3,24}$').hasMatch(username)) return;
     _usernameDebounce = Timer(const Duration(milliseconds: 400), () async {
       final available = await ref
@@ -76,15 +85,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _next() {
     if (_step < _stepCount - 1) {
       _pageController.nextPage(
-          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     } else {
       unawaited(_finish());
     }
   }
 
   Future<void> _pickAvatar() async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 90);
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
     if (picked != null) setState(() => _avatarFile = File(picked.path));
   }
 
@@ -94,13 +107,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _error = null;
     });
     try {
+      // Avatar upload is best-effort: a failed upload must never block
+      // account creation. The photo can be added later in Edit profile.
       String? avatarUrl;
       if (_avatarFile != null) {
-        avatarUrl = await ref
-            .read(mediaUploaderProvider)
-            .uploadImage(file: _avatarFile!, kind: 'avatar');
+        try {
+          avatarUrl = await ref
+              .read(mediaUploaderProvider)
+              .uploadImage(file: _avatarFile!, kind: 'avatar');
+        } catch (_) {
+          avatarUrl = null;
+        }
       }
-      await ref.read(myProfileProvider.notifier).completeOnboarding(
+      await ref
+          .read(myProfileProvider.notifier)
+          .completeOnboarding(
             username: _username.text.trim(),
             displayName: _displayName.text.trim(),
             bio: _bio.text.trim().isEmpty ? null : _bio.text.trim(),
@@ -112,6 +133,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (mounted) context.goNamed(Routes.map);
     } on AppException catch (e) {
       setState(() => _error = e.message);
+    } catch (e) {
+      // Catch-all so the button can never get stuck on a silent spinner.
+      setState(() => _error = 'Could not create your profile: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -120,64 +144,90 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Set up your profile'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(
-            value: (_step + 1) / _stepCount,
-            semanticsLabel: 'Onboarding progress',
+    return PopScope(
+      // System back must never kill the app from here: step back through the
+      // wizard, or fall out to the map as a browsing user.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_step > 0) {
+          _pageController.previousPage(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        } else {
+          context.goNamed(Routes.map);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Set up your profile'),
+          leading: IconButton(
+            tooltip: 'Finish later',
+            icon: const Icon(Icons.close),
+            onPressed: () => context.goNamed(Routes.map),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(4),
+            child: LinearProgressIndicator(
+              value: (_step + 1) / _stepCount,
+              semanticsLabel: 'Onboarding progress',
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (i) => setState(() => _step = i),
-                children: [
-                  _identityStep(theme),
-                  _photoStep(theme),
-                  _cityStep(theme),
-                  _cuisineStep(theme),
-                ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (i) => setState(() => _step = i),
+                  children: [
+                    _identityStep(theme),
+                    _photoStep(theme),
+                    _cityStep(theme),
+                    _cuisineStep(theme),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(WbSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: WbSpacing.sm),
-                      child: Text(_error!,
-                          style: TextStyle(color: theme.colorScheme.error)),
+              Padding(
+                padding: const EdgeInsets.all(WbSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: WbSpacing.sm),
+                        child: Text(
+                          _error!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    FilledButton(
+                      onPressed: _busy
+                          ? null
+                          : (_step == 0 && !_identityValid ? null : _next),
+                      child: _busy
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _step == _stepCount - 1 ? 'Finish' : 'Continue',
+                            ),
                     ),
-                  FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : (_step == 0 && !_identityValid ? null : _next),
-                    child: _busy
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(_step == _stepCount - 1 ? 'Finish' : 'Continue'),
-                  ),
-                  if (_step > 0 && _step < _stepCount)
-                    TextButton(
-                      onPressed: _busy ? null : _next,
-                      child: const Text('Skip for now'),
-                    ),
-                ],
+                    if (_step > 0 && _step < _stepCount)
+                      TextButton(
+                        onPressed: _busy ? null : _next,
+                        child: const Text('Skip for now'),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -204,6 +254,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             labelText: 'Username',
             prefixText: '@',
             helperText: 'Lowercase letters, numbers, underscores',
+            // Spell out WHY the Continue button is disabled instead of
+            // leaving the user guessing at an invisible rule.
+            errorText:
+                _username.text.isNotEmpty &&
+                    !RegExp(
+                      r'^[a-z0-9_]{3,24}$',
+                    ).hasMatch(_username.text.trim())
+                ? 'Needs 3-24 characters: lowercase letters, numbers, _'
+                : null,
             suffixIcon: _usernameAvailable == null
                 ? null
                 : Icon(
@@ -216,8 +275,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onChanged: _checkUsername,
         ),
         if (_usernameAvailable == false)
-          Text('That username is taken.',
-              style: TextStyle(color: theme.colorScheme.error)),
+          Text(
+            'That username is taken.',
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
         const SizedBox(height: WbSpacing.md),
         TextField(
           controller: _bio,
@@ -246,8 +307,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: CircleAvatar(
               radius: 64,
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              backgroundImage:
-                  _avatarFile == null ? null : FileImage(_avatarFile!),
+              backgroundImage: _avatarFile == null
+                  ? null
+                  : FileImage(_avatarFile!),
               child: _avatarFile == null
                   ? const Icon(Icons.add_a_photo_outlined, size: 36)
                   : null,
@@ -256,7 +318,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: WbSpacing.md),
           TextButton(
             onPressed: _pickAvatar,
-            child: Text(_avatarFile == null ? 'Choose a photo' : 'Change photo'),
+            child: Text(
+              _avatarFile == null ? 'Choose a photo' : 'Change photo',
+            ),
           ),
         ],
       ),
@@ -273,9 +337,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Text('Where is home?', style: theme.textTheme.headlineSmall),
           const SizedBox(height: WbSpacing.sm),
-          Text('Your map starts here.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            'Your map starts here.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: WbSpacing.lg),
           Wrap(
             spacing: WbSpacing.sm,
@@ -304,9 +371,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Text('What do you crave?', style: theme.textTheme.headlineSmall),
           const SizedBox(height: WbSpacing.sm),
-          Text('Pick a few favorites to shape your discovery.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            'Pick a few favorites to shape your discovery.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: WbSpacing.lg),
           Wrap(
             spacing: WbSpacing.sm,

@@ -54,6 +54,16 @@ Project `wanderbites-503816` exists in the exceldaily7 Google account with:
 
 `android/app/google-services.json` is gitignored; pull a fresh copy from the Firebase console (Project settings -> your apps -> google-services.json) if it's missing on a new machine. Without it the app still builds and runs with the debug-log analytics and no-op push fallbacks.
 
+## 5b. Auth emails (done July 28 2026)
+
+The shared Supabase project sends auth emails (confirmations, resets) through
+Brevo custom SMTP: host smtp-relay.brevo.com:587, login ae4300001@smtp-brevo.com,
+sender noreply@phase-forge.com ("OrbitStack Apps"), key named "Supabase Shared
+Auth" in the Brevo dashboard. Rate limit is 30 auth emails/hour (adjustable in
+Supabase Auth -> Rate Limits). Note: signing up with an email that already has
+an account in the shared pool intentionally sends nothing (anti-enumeration) —
+those users must sign in instead.
+
 ## 6. Google Maps key (the one manual step left)
 
 Maps SDK for Android could not be enabled without a billing account attached to `wanderbites-503816` — that's a payment step only the account owner can complete.
