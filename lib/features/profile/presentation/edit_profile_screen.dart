@@ -18,20 +18,53 @@ class EditProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
+/// Curated taste tag suggestions; users pick up to five. Their existing tags
+/// always appear as options even if not in this list.
+const kTasteTagSuggestions = [
+  'Thai Food',
+  'Bold Flavors',
+  'Loves Spice',
+  'Street Food',
+  'Tries Anything',
+  'Seafood',
+  'Fine Dining',
+  'Hidden Gems',
+  'Desserts',
+  'Local Favorites',
+  'Budget Eats',
+  'Coffee Hunter',
+  'Vegan Friendly',
+  'BBQ & Grill',
+];
+
+const _kMaxTasteTags = 5;
+
+/// Selectable values per personality field, mirrored by the display card.
+const kPersonalityOptions = {
+  'flavor': ['Bold', 'Balanced', 'Delicate'],
+  'spice': ['Mild', 'Medium', 'Hot'],
+  'dining_style': ['Casual explorer', 'Planner', 'Fine diner', 'Grab & go'],
+  'attitude': ['Will try anything', 'Comfort seeker', 'Health first'],
+};
+
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _displayName = TextEditingController();
   final _bio = TextEditingController();
+  final _favoriteCuisine = TextEditingController();
   String? _homeCityId;
   File? _newAvatar;
   File? _newHeader;
   bool _busy = false;
   String? _error;
   bool _initialized = false;
+  final List<String> _tasteTags = [];
+  final Map<String, String?> _personality = {};
 
   @override
   void dispose() {
     _displayName.dispose();
     _bio.dispose();
+    _favoriteCuisine.dispose();
     super.dispose();
   }
 
@@ -42,10 +75,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
     try {
       final uploader = ref.read(mediaUploaderProvider);
+      final personality = <String, String>{
+        for (final e in _personality.entries)
+          if (e.value != null && e.value!.trim().isNotEmpty)
+            e.key: e.value!.trim(),
+        if (_favoriteCuisine.text.trim().isNotEmpty)
+          'favorite_cuisine': _favoriteCuisine.text.trim(),
+      };
       final patch = <String, dynamic>{
         'display_name': _displayName.text.trim(),
         'bio': _bio.text.trim().isEmpty ? null : _bio.text.trim(),
         'home_city_id': _homeCityId,
+        'taste_tags': _tasteTags,
+        'taste_personality': personality,
       };
       if (_newAvatar != null) {
         patch['avatar_url'] = await uploader.uploadImage(
@@ -87,6 +129,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _displayName.text = profile.displayName;
       _bio.text = profile.bio ?? '';
       _homeCityId = profile.homeCityId;
+      _tasteTags.addAll(profile.tasteTags);
+      for (final key in kPersonalityOptions.keys) {
+        _personality[key] = profile.tastePersonality[key] as String?;
+      }
+      _favoriteCuisine.text =
+          (profile.tastePersonality['favorite_cuisine'] as String?) ?? '';
     }
     final cities = ref.watch(citiesProvider).value ?? [];
     final theme = Theme.of(context);
@@ -168,10 +216,99 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
             ],
           ),
+          const SizedBox(height: WbSpacing.lg),
+          Text('Taste tags', style: theme.textTheme.labelLarge),
+          Text(
+            'Pick up to $_kMaxTasteTags that describe how you eat.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: WbSpacing.xs),
+          Wrap(
+            spacing: WbSpacing.sm,
+            runSpacing: WbSpacing.sm,
+            children: [
+              for (final tag in {..._tasteTags, ...kTasteTagSuggestions})
+                FilterChip(
+                  label: Text(tag),
+                  selected: _tasteTags.contains(tag),
+                  onSelected: (v) {
+                    setState(() {
+                      if (v) {
+                        if (_tasteTags.length < _kMaxTasteTags) {
+                          _tasteTags.add(tag);
+                        } else {
+                          ScaffoldMessenger.of(context)
+                            ..clearSnackBars()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Up to $_kMaxTasteTags tags — remove one '
+                                  'first.',
+                                ),
+                              ),
+                            );
+                        }
+                      } else {
+                        _tasteTags.remove(tag);
+                      }
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: WbSpacing.lg),
+          Text('Taste personality', style: theme.textTheme.labelLarge),
+          Text(
+            'How you like to eat. All optional.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: WbSpacing.sm),
+          for (final entry in kPersonalityOptions.entries) ...[
+            Text(
+              switch (entry.key) {
+                'flavor' => 'Flavor',
+                'spice' => 'Spice level',
+                'dining_style' => 'Dining style',
+                _ => 'Food attitude',
+              },
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: WbSpacing.xs),
+            Wrap(
+              spacing: WbSpacing.sm,
+              runSpacing: WbSpacing.sm,
+              children: [
+                for (final option in entry.value)
+                  ChoiceChip(
+                    label: Text(option),
+                    selected: _personality[entry.key] == option,
+                    onSelected: (v) => setState(
+                      () => _personality[entry.key] = v ? option : null,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: WbSpacing.sm),
+          ],
+          TextField(
+            controller: _favoriteCuisine,
+            maxLength: 40,
+            decoration: const InputDecoration(
+              labelText: 'Favorite cuisine',
+              hintText: 'Thai, Oaxacan, Sichuan...',
+            ),
+          ),
           if (_error != null) ...[
             const SizedBox(height: WbSpacing.md),
             Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           ],
+          const SizedBox(height: WbSpacing.xl),
         ],
       ),
     );

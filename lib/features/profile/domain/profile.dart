@@ -21,6 +21,10 @@ abstract class Profile with _$Profile {
     @JsonKey(name: 'favorite_cuisines')
     @Default(<String>[])
     List<String> favoriteCuisines,
+    @JsonKey(name: 'taste_tags') @Default(<String>[]) List<String> tasteTags,
+    @JsonKey(name: 'taste_personality')
+    @Default(<String, dynamic>{})
+    Map<String, dynamic> tastePersonality,
     @JsonKey(name: 'created_at') required DateTime createdAt,
   }) = _Profile;
 

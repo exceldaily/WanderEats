@@ -18,6 +18,7 @@ _Recommendation _$RecommendationFromJson(Map<String, dynamic> json) =>
       visibility: json['visibility'] as String? ?? 'public',
       createdAt: DateTime.parse(json['created_at'] as String),
       author: json['profiles'] as Map<String, dynamic>?,
+      restaurant: json['restaurants'] as Map<String, dynamic>?,
       photos:
           (json['recommendation_photos'] as List<dynamic>?)
               ?.map((e) => e as Map<String, dynamic>)
@@ -37,5 +38,6 @@ Map<String, dynamic> _$RecommendationToJson(_Recommendation instance) =>
       'visibility': instance.visibility,
       'created_at': instance.createdAt.toIso8601String(),
       'profiles': instance.author,
+      'restaurants': instance.restaurant,
       'recommendation_photos': instance.photos,
     };

@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 mixin _$Recommendation {
 
  String get id;@JsonKey(name: 'user_id') String get userId;@JsonKey(name: 'restaurant_id') String get restaurantId; String get body;@JsonKey(name: 'what_to_order') String? get whatToOrder;@JsonKey(name: 'price_impression') int? get priceImpression;@JsonKey(name: 'visited_on') String? get visitedOn; String get visibility;@JsonKey(name: 'created_at') DateTime get createdAt;// Joined author fields (profiles embed)
-@JsonKey(name: 'profiles') Map<String, dynamic>? get author;// Joined photos
+@JsonKey(name: 'profiles') Map<String, dynamic>? get author;// Joined restaurant fields (restaurants embed): name, cover_photo_url,
+// price_level, cities(name, countries(name)). The card leads with these.
+@JsonKey(name: 'restaurants') Map<String, dynamic>? get restaurant;// Joined photos
 @JsonKey(name: 'recommendation_photos') List<Map<String, dynamic>> get photos;
 /// Create a copy of Recommendation
 /// with the given fields replaced by the non-null parameter values.
@@ -30,16 +32,16 @@ $RecommendationCopyWith<Recommendation> get copyWith => _$RecommendationCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Recommendation&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.body, body) || other.body == body)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&(identical(other.priceImpression, priceImpression) || other.priceImpression == priceImpression)&&(identical(other.visitedOn, visitedOn) || other.visitedOn == visitedOn)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.author, author)&&const DeepCollectionEquality().equals(other.photos, photos));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Recommendation&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.body, body) || other.body == body)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&(identical(other.priceImpression, priceImpression) || other.priceImpression == priceImpression)&&(identical(other.visitedOn, visitedOn) || other.visitedOn == visitedOn)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.author, author)&&const DeepCollectionEquality().equals(other.restaurant, restaurant)&&const DeepCollectionEquality().equals(other.photos, photos));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,restaurantId,body,whatToOrder,priceImpression,visitedOn,visibility,createdAt,const DeepCollectionEquality().hash(author),const DeepCollectionEquality().hash(photos));
+int get hashCode => Object.hash(runtimeType,id,userId,restaurantId,body,whatToOrder,priceImpression,visitedOn,visibility,createdAt,const DeepCollectionEquality().hash(author),const DeepCollectionEquality().hash(restaurant),const DeepCollectionEquality().hash(photos));
 
 @override
 String toString() {
-  return 'Recommendation(id: $id, userId: $userId, restaurantId: $restaurantId, body: $body, whatToOrder: $whatToOrder, priceImpression: $priceImpression, visitedOn: $visitedOn, visibility: $visibility, createdAt: $createdAt, author: $author, photos: $photos)';
+  return 'Recommendation(id: $id, userId: $userId, restaurantId: $restaurantId, body: $body, whatToOrder: $whatToOrder, priceImpression: $priceImpression, visitedOn: $visitedOn, visibility: $visibility, createdAt: $createdAt, author: $author, restaurant: $restaurant, photos: $photos)';
 }
 
 
@@ -50,7 +52,7 @@ abstract mixin class $RecommendationCopyWith<$Res>  {
   factory $RecommendationCopyWith(Recommendation value, $Res Function(Recommendation) _then) = _$RecommendationCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'restaurant_id') String restaurantId, String body,@JsonKey(name: 'what_to_order') String? whatToOrder,@JsonKey(name: 'price_impression') int? priceImpression,@JsonKey(name: 'visited_on') String? visitedOn, String visibility,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'profiles') Map<String, dynamic>? author,@JsonKey(name: 'recommendation_photos') List<Map<String, dynamic>> photos
+ String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'restaurant_id') String restaurantId, String body,@JsonKey(name: 'what_to_order') String? whatToOrder,@JsonKey(name: 'price_impression') int? priceImpression,@JsonKey(name: 'visited_on') String? visitedOn, String visibility,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'profiles') Map<String, dynamic>? author,@JsonKey(name: 'restaurants') Map<String, dynamic>? restaurant,@JsonKey(name: 'recommendation_photos') List<Map<String, dynamic>> photos
 });
 
 
@@ -67,7 +69,7 @@ class _$RecommendationCopyWithImpl<$Res>
 
 /// Create a copy of Recommendation
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? restaurantId = null,Object? body = null,Object? whatToOrder = freezed,Object? priceImpression = freezed,Object? visitedOn = freezed,Object? visibility = null,Object? createdAt = null,Object? author = freezed,Object? photos = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? restaurantId = null,Object? body = null,Object? whatToOrder = freezed,Object? priceImpression = freezed,Object? visitedOn = freezed,Object? visibility = null,Object? createdAt = null,Object? author = freezed,Object? restaurant = freezed,Object? photos = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -79,6 +81,7 @@ as int?,visitedOn: freezed == visitedOn ? _self.visitedOn : visitedOn // ignore:
 as String?,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,restaurant: freezed == restaurant ? _self.restaurant : restaurant // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,photos: null == photos ? _self.photos : photos // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>,
   ));
@@ -165,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'restaurants')  Map<String, dynamic>? restaurant, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Recommendation() when $default != null:
-return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.photos);case _:
+return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.restaurant,_that.photos);case _:
   return orElse();
 
 }
@@ -186,10 +189,10 @@ return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatTo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'restaurants')  Map<String, dynamic>? restaurant, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)  $default,) {final _that = this;
 switch (_that) {
 case _Recommendation():
-return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.photos);case _:
+return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.restaurant,_that.photos);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +209,10 @@ return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatTo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'restaurant_id')  String restaurantId,  String body, @JsonKey(name: 'what_to_order')  String? whatToOrder, @JsonKey(name: 'price_impression')  int? priceImpression, @JsonKey(name: 'visited_on')  String? visitedOn,  String visibility, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'profiles')  Map<String, dynamic>? author, @JsonKey(name: 'restaurants')  Map<String, dynamic>? restaurant, @JsonKey(name: 'recommendation_photos')  List<Map<String, dynamic>> photos)?  $default,) {final _that = this;
 switch (_that) {
 case _Recommendation() when $default != null:
-return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.photos);case _:
+return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatToOrder,_that.priceImpression,_that.visitedOn,_that.visibility,_that.createdAt,_that.author,_that.restaurant,_that.photos);case _:
   return null;
 
 }
@@ -221,7 +224,7 @@ return $default(_that.id,_that.userId,_that.restaurantId,_that.body,_that.whatTo
 @JsonSerializable()
 
 class _Recommendation implements Recommendation {
-  const _Recommendation({required this.id, @JsonKey(name: 'user_id') required this.userId, @JsonKey(name: 'restaurant_id') required this.restaurantId, required this.body, @JsonKey(name: 'what_to_order') this.whatToOrder, @JsonKey(name: 'price_impression') this.priceImpression, @JsonKey(name: 'visited_on') this.visitedOn, this.visibility = 'public', @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'profiles') final  Map<String, dynamic>? author, @JsonKey(name: 'recommendation_photos') final  List<Map<String, dynamic>> photos = const <Map<String, dynamic>>[]}): _author = author,_photos = photos;
+  const _Recommendation({required this.id, @JsonKey(name: 'user_id') required this.userId, @JsonKey(name: 'restaurant_id') required this.restaurantId, required this.body, @JsonKey(name: 'what_to_order') this.whatToOrder, @JsonKey(name: 'price_impression') this.priceImpression, @JsonKey(name: 'visited_on') this.visitedOn, this.visibility = 'public', @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'profiles') final  Map<String, dynamic>? author, @JsonKey(name: 'restaurants') final  Map<String, dynamic>? restaurant, @JsonKey(name: 'recommendation_photos') final  List<Map<String, dynamic>> photos = const <Map<String, dynamic>>[]}): _author = author,_restaurant = restaurant,_photos = photos;
   factory _Recommendation.fromJson(Map<String, dynamic> json) => _$RecommendationFromJson(json);
 
 @override final  String id;
@@ -240,6 +243,19 @@ class _Recommendation implements Recommendation {
   final value = _author;
   if (value == null) return null;
   if (_author is EqualUnmodifiableMapView) return _author;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
+// Joined restaurant fields (restaurants embed): name, cover_photo_url,
+// price_level, cities(name, countries(name)). The card leads with these.
+ final  Map<String, dynamic>? _restaurant;
+// Joined restaurant fields (restaurants embed): name, cover_photo_url,
+// price_level, cities(name, countries(name)). The card leads with these.
+@override@JsonKey(name: 'restaurants') Map<String, dynamic>? get restaurant {
+  final value = _restaurant;
+  if (value == null) return null;
+  if (_restaurant is EqualUnmodifiableMapView) return _restaurant;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(value);
 }
@@ -267,16 +283,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Recommendation&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.body, body) || other.body == body)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&(identical(other.priceImpression, priceImpression) || other.priceImpression == priceImpression)&&(identical(other.visitedOn, visitedOn) || other.visitedOn == visitedOn)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other._author, _author)&&const DeepCollectionEquality().equals(other._photos, _photos));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Recommendation&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.body, body) || other.body == body)&&(identical(other.whatToOrder, whatToOrder) || other.whatToOrder == whatToOrder)&&(identical(other.priceImpression, priceImpression) || other.priceImpression == priceImpression)&&(identical(other.visitedOn, visitedOn) || other.visitedOn == visitedOn)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other._author, _author)&&const DeepCollectionEquality().equals(other._restaurant, _restaurant)&&const DeepCollectionEquality().equals(other._photos, _photos));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,restaurantId,body,whatToOrder,priceImpression,visitedOn,visibility,createdAt,const DeepCollectionEquality().hash(_author),const DeepCollectionEquality().hash(_photos));
+int get hashCode => Object.hash(runtimeType,id,userId,restaurantId,body,whatToOrder,priceImpression,visitedOn,visibility,createdAt,const DeepCollectionEquality().hash(_author),const DeepCollectionEquality().hash(_restaurant),const DeepCollectionEquality().hash(_photos));
 
 @override
 String toString() {
-  return 'Recommendation(id: $id, userId: $userId, restaurantId: $restaurantId, body: $body, whatToOrder: $whatToOrder, priceImpression: $priceImpression, visitedOn: $visitedOn, visibility: $visibility, createdAt: $createdAt, author: $author, photos: $photos)';
+  return 'Recommendation(id: $id, userId: $userId, restaurantId: $restaurantId, body: $body, whatToOrder: $whatToOrder, priceImpression: $priceImpression, visitedOn: $visitedOn, visibility: $visibility, createdAt: $createdAt, author: $author, restaurant: $restaurant, photos: $photos)';
 }
 
 
@@ -287,7 +303,7 @@ abstract mixin class _$RecommendationCopyWith<$Res> implements $RecommendationCo
   factory _$RecommendationCopyWith(_Recommendation value, $Res Function(_Recommendation) _then) = __$RecommendationCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'restaurant_id') String restaurantId, String body,@JsonKey(name: 'what_to_order') String? whatToOrder,@JsonKey(name: 'price_impression') int? priceImpression,@JsonKey(name: 'visited_on') String? visitedOn, String visibility,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'profiles') Map<String, dynamic>? author,@JsonKey(name: 'recommendation_photos') List<Map<String, dynamic>> photos
+ String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'restaurant_id') String restaurantId, String body,@JsonKey(name: 'what_to_order') String? whatToOrder,@JsonKey(name: 'price_impression') int? priceImpression,@JsonKey(name: 'visited_on') String? visitedOn, String visibility,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'profiles') Map<String, dynamic>? author,@JsonKey(name: 'restaurants') Map<String, dynamic>? restaurant,@JsonKey(name: 'recommendation_photos') List<Map<String, dynamic>> photos
 });
 
 
@@ -304,7 +320,7 @@ class __$RecommendationCopyWithImpl<$Res>
 
 /// Create a copy of Recommendation
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? restaurantId = null,Object? body = null,Object? whatToOrder = freezed,Object? priceImpression = freezed,Object? visitedOn = freezed,Object? visibility = null,Object? createdAt = null,Object? author = freezed,Object? photos = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? restaurantId = null,Object? body = null,Object? whatToOrder = freezed,Object? priceImpression = freezed,Object? visitedOn = freezed,Object? visibility = null,Object? createdAt = null,Object? author = freezed,Object? restaurant = freezed,Object? photos = null,}) {
   return _then(_Recommendation(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -316,6 +332,7 @@ as int?,visitedOn: freezed == visitedOn ? _self.visitedOn : visitedOn // ignore:
 as String?,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,author: freezed == author ? _self._author : author // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,restaurant: freezed == restaurant ? _self._restaurant : restaurant // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,photos: null == photos ? _self._photos : photos // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>,
   ));

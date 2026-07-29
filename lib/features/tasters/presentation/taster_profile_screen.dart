@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,8 +10,12 @@ import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../map/presentation/map_controller.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile.dart';
+import '../../profile/presentation/widgets/profile_header.dart';
+import '../../profile/presentation/widgets/profile_stats.dart';
+import '../../profile/presentation/widgets/taste_personality_card.dart';
 import '../../recommendations/data/recommendation_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
@@ -56,6 +59,21 @@ class TasterProfileScreen extends ConsumerStatefulWidget {
 class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
   PlaceFilter _filter = PlaceFilter.all;
 
+  void _share(Profile p) {
+    unawaited(
+      ref
+          .read(analyticsProvider)
+          .shareInitiated(contentType: 'taster', id: p.id),
+    );
+    unawaited(
+      SharePlus.instance.share(
+        ShareParams(
+          text: 'Follow @${p.username} on WanderBites for great food finds',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,201 +97,134 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
               title: 'Profile not found',
             );
           }
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 140,
-                pinned: true,
-                actions: [
-                  IconButton(
-                    tooltip: 'Share profile',
-                    icon: const Icon(Icons.share_outlined),
-                    onPressed: () {
-                      unawaited(
-                        ref
-                            .read(analyticsProvider)
-                            .shareInitiated(contentType: 'taster', id: p.id),
-                      );
-                      unawaited(
-                        SharePlus.instance.share(
-                          ShareParams(
-                            text:
-                                'Follow @${p.username} on WanderBites for great food finds',
+          final stats = ref.watch(tasterStatsProvider(p.id)).value;
+
+          return Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: ProfileHeader(
+                      profile: p,
+                      actions: [
+                        if (!isMe)
+                          _FollowButton(
+                            following: following,
+                            enabled: ref.watch(isSignedInProvider),
+                            onPressed: () => ref
+                                .read(followingIdsProvider.notifier)
+                                .toggle(p.id),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  background: p.headerUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: p.headerUrl!,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(color: WbColors.voyage),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(WbSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          CircleAvatar(
-                            radius: 36,
-                            backgroundImage: p.avatarUrl == null
-                                ? null
-                                : CachedNetworkImageProvider(p.avatarUrl!),
-                            child: p.avatarUrl == null
-                                ? Text(
-                                    p.displayName.characters.first,
-                                    style: theme.textTheme.headlineSmall,
-                                  )
-                                : null,
-                          ),
-                          const Spacer(),
-                          if (!isMe)
-                            FilledButton.icon(
-                              onPressed: ref.watch(isSignedInProvider)
-                                  ? () => ref
-                                        .read(followingIdsProvider.notifier)
-                                        .toggle(p.id)
-                                  : null,
-                              icon: Icon(
-                                following ? Icons.check : Icons.person_add_alt,
-                              ),
-                              label: Text(following ? 'Following' : 'Follow'),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: WbSpacing.sm),
-                      Row(
-                        children: [
-                          Text(
-                            p.displayName,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (p.isVerified)
-                            const Padding(
-                              padding: EdgeInsets.only(left: 6),
-                              child: Icon(
-                                Icons.verified,
-                                color: WbColors.voyageLight,
-                                size: 20,
-                              ),
-                            ),
-                        ],
-                      ),
-                      Text(
-                        '@${p.username}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (p.bio != null) ...[
-                        const SizedBox(height: WbSpacing.sm),
-                        Text(p.bio!, style: theme.textTheme.bodyMedium),
                       ],
-                      const SizedBox(height: WbSpacing.md),
-                      _StatsRow(tasterId: p.id),
-                      const Divider(height: WbSpacing.xl),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(WbSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          ProfileStats(stats: stats),
+                          if (p.tastePersonality.values.any(
+                            (v) => (v as String?)?.trim().isNotEmpty ?? false,
+                          )) ...[
+                            const SizedBox(height: WbSpacing.sm + 4),
+                            TastePersonalityCard(
+                              personality: p.tastePersonality,
+                            ),
+                          ],
+                          const SizedBox(height: WbSpacing.lg),
                           Text(
                             'Food map',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          SegmentedButton<PlaceFilter>(
-                            style: const ButtonStyle(
-                              visualDensity: VisualDensity.compact,
+                          const SizedBox(height: WbSpacing.sm),
+                          _MapFilters(
+                            selected: _filter,
+                            onChanged: (f) => setState(() => _filter = f),
+                          ),
+                          const SizedBox(height: WbSpacing.sm),
+                          _PersonalMap(tasterId: p.id, filter: _filter),
+                          const SizedBox(height: WbSpacing.lg),
+                          Text(
+                            'Recent recommendations',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
-                            segments: const [
-                              ButtonSegment(
-                                value: PlaceFilter.all,
-                                label: Text('All'),
-                              ),
-                              ButtonSegment(
-                                value: PlaceFilter.recommended,
-                                icon: Icon(Icons.thumb_up_outlined, size: 14),
-                              ),
-                              ButtonSegment(
-                                value: PlaceFilter.visited,
-                                icon: Icon(
-                                  Icons.where_to_vote_outlined,
-                                  size: 14,
-                                ),
-                              ),
-                              ButtonSegment(
-                                value: PlaceFilter.saved,
-                                icon: Icon(Icons.bookmark_outline, size: 14),
-                              ),
-                            ],
-                            selected: {_filter},
-                            onSelectionChanged: (s) =>
-                                setState(() => _filter = s.first),
                           ),
                         ],
                       ),
-                      const SizedBox(height: WbSpacing.sm),
-                      _PersonalMap(tasterId: p.id, filter: _filter),
-                      const Divider(height: WbSpacing.xl),
-                      Text(
-                        'Recent recommendations',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  ref
+                      .watch(tasterRecsProvider(widget.tasterId))
+                      .when(
+                        loading: () => const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.all(WbSpacing.md),
+                            child: WbSkeleton(height: 120),
+                          ),
                         ),
+                        error: (e, _) => SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(WbSpacing.md),
+                            child: Text('Could not load: $e'),
+                          ),
+                        ),
+                        data: (recs) => recs.isEmpty
+                            ? SliverToBoxAdapter(
+                                child: WbEmptyState(
+                                  icon: Icons.rate_review_outlined,
+                                  title: isMe
+                                      ? 'Your first recommendation will '
+                                            'appear here.'
+                                      : 'No recommendations yet',
+                                ),
+                              )
+                            : SliverList.builder(
+                                itemCount: recs.length,
+                                itemBuilder: (context, i) => Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    WbSpacing.md,
+                                    0,
+                                    WbSpacing.md,
+                                    WbSpacing.sm,
+                                  ),
+                                  child: RecommendationCard(
+                                    recommendation: recs[i],
+                                  ),
+                                ),
+                              ),
+                      ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: WbSpacing.xl),
+                  ),
+                ],
+              ),
+              // Back + share float over the banner with a soft scrim so they
+              // stay visible on any cover image.
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: WbSpacing.xs),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _ScrimIconButton(
+                        icon: Icons.arrow_back,
+                        tooltip: 'Back',
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
+                      _ScrimIconButton(
+                        icon: Icons.share_outlined,
+                        tooltip: 'Share profile',
+                        onPressed: () => _share(p),
                       ),
                     ],
                   ),
                 ),
               ),
-              ref
-                  .watch(tasterRecsProvider(widget.tasterId))
-                  .when(
-                    loading: () => const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(WbSpacing.md),
-                        child: WbSkeleton(height: 120),
-                      ),
-                    ),
-                    error: (e, _) => SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(WbSpacing.md),
-                        child: Text('Could not load: $e'),
-                      ),
-                    ),
-                    data: (recs) => recs.isEmpty
-                        ? const SliverToBoxAdapter(
-                            child: WbEmptyState(
-                              icon: Icons.rate_review_outlined,
-                              title: 'No recommendations yet',
-                            ),
-                          )
-                        : SliverList.builder(
-                            itemCount: recs.length,
-                            itemBuilder: (context, i) => Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                WbSpacing.md,
-                                0,
-                                WbSpacing.md,
-                                WbSpacing.sm,
-                              ),
-                              child: RecommendationCard(
-                                recommendation: recs[i],
-                              ),
-                            ),
-                          ),
-                  ),
-              const SliverToBoxAdapter(child: SizedBox(height: WbSpacing.xl)),
             ],
           );
         },
@@ -282,41 +233,105 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
   }
 }
 
-class _StatsRow extends ConsumerWidget {
-  const _StatsRow({required this.tasterId});
+/// Follow with a quick state cross-fade; skipped when animations are off.
+class _FollowButton extends StatelessWidget {
+  const _FollowButton({
+    required this.following,
+    required this.enabled,
+    required this.onPressed,
+  });
 
-  final String tasterId;
+  final bool following;
+  final bool enabled;
+  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(tasterStatsProvider(tasterId)).value;
-    final theme = Theme.of(context);
-    Widget stat(String label, Object? value) => Expanded(
-      child: Column(
-        children: [
-          Text(
-            '${value ?? '-'}',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final child = following
+        ? FilledButton.tonalIcon(
+            key: const ValueKey('following'),
+            onPressed: enabled ? onPressed : null,
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('Following'),
+          )
+        : FilledButton.icon(
+            key: const ValueKey('follow'),
+            onPressed: enabled ? onPressed : null,
+            icon: const Icon(Icons.person_add_alt, size: 18),
+            label: const Text('Follow'),
+          );
+    if (reduceMotion) return child;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
+      child: child,
+    );
+  }
+}
+
+class _ScrimIconButton extends StatelessWidget {
+  const _ScrimIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.28),
+      shape: const CircleBorder(),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
       ),
     );
-    return Row(
-      children: [
-        stat('Followers', stats?['followers']),
-        stat('Following', stats?['following']),
-        stat('Recs', stats?['recommendations']),
-        stat('Cities', stats?['cities_explored']),
-        stat('Score', stats?['reputation']),
-      ],
+  }
+}
+
+class _MapFilters extends StatelessWidget {
+  const _MapFilters({required this.selected, required this.onChanged});
+
+  final PlaceFilter selected;
+  final ValueChanged<PlaceFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(PlaceFilter f, String label, IconData icon) {
+      final isSelected = selected == f;
+      return Padding(
+        padding: const EdgeInsets.only(right: WbSpacing.sm),
+        child: FilterChip(
+          avatar: isSelected ? null : Icon(icon, size: 15),
+          showCheckmark: isSelected,
+          label: Text(label),
+          selected: isSelected,
+          onSelected: (_) => onChanged(f),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          chip(PlaceFilter.all, 'All', Icons.layers_outlined),
+          chip(
+            PlaceFilter.recommended,
+            'Recommended',
+            Icons.rate_review_outlined,
+          ),
+          chip(PlaceFilter.visited, 'Visited', Icons.where_to_vote_outlined),
+          chip(PlaceFilter.saved, 'Saved', Icons.bookmark_outline),
+        ],
+      ),
     );
   }
 }
@@ -329,70 +344,202 @@ class _PersonalMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final places = ref.watch(tasterPlacesProvider(tasterId));
-    return SizedBox(
-      height: 220,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(WbRadius.card),
-        child: places.when(
-          loading: () => const WbSkeleton(height: 220),
-          error: (e, _) => Center(child: Text('Map unavailable: $e')),
-          data: (all) {
-            final filtered = all
-                .where(
-                  (p) => switch (filter) {
-                    PlaceFilter.all => true,
-                    PlaceFilter.recommended => p.recommended,
-                    PlaceFilter.visited => p.visited,
-                    PlaceFilter.saved => p.saved,
-                  },
-                )
-                .toList();
-            if (!Env.hasMapsKey) {
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: Text(
-                    '${filtered.length} places (map needs an API key)',
-                  ),
-                ),
-              );
-            }
-            if (filtered.isEmpty) {
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: Text('No places yet')),
-              );
-            }
-            return GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(
-                  filtered.first.marker.lat,
-                  filtered.first.marker.lng,
-                ),
-                zoom: 2.5,
-              ),
-              liteModeEnabled: true,
-              zoomControlsEnabled: false,
-              myLocationButtonEnabled: false,
-              markers: {
-                for (final p in filtered)
-                  Marker(
-                    markerId: MarkerId(p.marker.id),
-                    position: LatLng(p.marker.lat, p.marker.lng),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                      p.recommended
-                          ? BitmapDescriptor.hueGreen
-                          : p.visited
-                          ? BitmapDescriptor.hueViolet
-                          : BitmapDescriptor.hueRed,
-                    ),
-                  ),
+
+    return places.when(
+      loading: () => const WbSkeleton(height: 190),
+      error: (e, _) => Text('Map unavailable: $e'),
+      data: (all) {
+        final filtered = all
+            .where(
+              (p) => switch (filter) {
+                PlaceFilter.all => true,
+                PlaceFilter.recommended => p.recommended,
+                PlaceFilter.visited => p.visited,
+                PlaceFilter.saved => p.saved,
               },
-            );
-          },
+            )
+            .toList();
+
+        final cityIds = {
+          for (final p in filtered)
+            if (p.marker.cityId != null) p.marker.cityId!,
+        };
+        final summary = filtered.isEmpty
+            ? null
+            : '${filtered.length} ${filtered.length == 1 ? 'place' : 'places'}'
+                  '${cityIds.isEmpty ? '' : ' across ${cityIds.length} '
+                            '${cityIds.length == 1 ? 'city' : 'cities'}'}';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(WbRadius.card),
+              child: SizedBox(
+                height: 190,
+                child: !Env.hasMapsKey
+                    ? Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: Text(
+                            '${filtered.length} places '
+                            '(map needs an API key)',
+                          ),
+                        ),
+                      )
+                    : filtered.isEmpty
+                    ? Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: Text(switch (filter) {
+                            PlaceFilter.all => 'No places yet',
+                            PlaceFilter.recommended => 'No recommendations yet',
+                            PlaceFilter.visited => 'No visits yet',
+                            PlaceFilter.saved => 'No saves yet',
+                          }),
+                        ),
+                      )
+                    : GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            filtered.first.marker.lat,
+                            filtered.first.marker.lng,
+                          ),
+                          zoom: 2.5,
+                        ),
+                        liteModeEnabled: true,
+                        zoomControlsEnabled: false,
+                        myLocationButtonEnabled: false,
+                        markers: {
+                          for (final p in filtered)
+                            Marker(
+                              markerId: MarkerId(p.marker.id),
+                              position: LatLng(p.marker.lat, p.marker.lng),
+                              // Hues match the main map: recommended green,
+                              // visited violet, saved ember-red. The legend
+                              // below repeats this with icons, so color is
+                              // never the only signal.
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                p.recommended
+                                    ? BitmapDescriptor.hueGreen
+                                    : p.visited
+                                    ? BitmapDescriptor.hueViolet
+                                    : BitmapDescriptor.hueRed,
+                              ),
+                            ),
+                        },
+                      ),
+              ),
+            ),
+            const SizedBox(height: WbSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: WbSpacing.md,
+                    runSpacing: 4,
+                    children: const [
+                      _LegendEntry(
+                        color: WbColors.success,
+                        icon: Icons.rate_review_outlined,
+                        label: 'Recommended',
+                      ),
+                      _LegendEntry(
+                        color: Color(0xFF5C6BC0),
+                        icon: Icons.where_to_vote_outlined,
+                        label: 'Visited',
+                      ),
+                      _LegendEntry(
+                        color: WbColors.ember,
+                        icon: Icons.bookmark_outline,
+                        label: 'Saved',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (summary != null || filtered.isNotEmpty) ...[
+              const SizedBox(height: WbSpacing.xs),
+              Row(
+                children: [
+                  if (summary != null)
+                    Expanded(
+                      child: Text(
+                        summary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  if (filtered.isNotEmpty)
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        final first = filtered.first.marker;
+                        ref
+                            .read(mapDestinationProvider.notifier)
+                            .go(
+                              MapDestination(
+                                lat: first.lat,
+                                lng: first.lng,
+                                label: 'this food map',
+                              ),
+                            );
+                        // Jump to the root map tab.
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
+                      },
+                      icon: const Icon(Icons.open_in_full, size: 16),
+                      label: const Text('View full map'),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LegendEntry extends StatelessWidget {
+  const _LegendEntry({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
+
+  final Color color;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-      ),
+        const SizedBox(width: 4),
+        Icon(icon, size: 13, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 2),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

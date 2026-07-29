@@ -11,7 +11,10 @@ class RecommendationRepository {
   final SupabaseQuerySchema _schema;
 
   static const _select =
-      '*, profiles(username, display_name, avatar_url, is_verified), recommendation_photos(storage_path, position)';
+      '*, profiles(username, display_name, avatar_url, is_verified), '
+      'recommendation_photos(storage_path, position), '
+      'restaurants(name, cover_photo_url, price_level, '
+      'cities(name, countries(name)))';
 
   Future<List<Recommendation>> forRestaurant(
     String restaurantId, {

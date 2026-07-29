@@ -22,6 +22,14 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  tasteTags:
+      (json['taste_tags'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  tastePersonality:
+      json['taste_personality'] as Map<String, dynamic>? ??
+      const <String, dynamic>{},
   createdAt: DateTime.parse(json['created_at'] as String),
 );
 
@@ -37,5 +45,7 @@ Map<String, dynamic> _$ProfileToJson(_Profile instance) => <String, dynamic>{
   'is_admin': instance.isAdmin,
   'onboarding_completed': instance.onboardingCompleted,
   'favorite_cuisines': instance.favoriteCuisines,
+  'taste_tags': instance.tasteTags,
+  'taste_personality': instance.tastePersonality,
   'created_at': instance.createdAt.toIso8601String(),
 };

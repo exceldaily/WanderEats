@@ -10,7 +10,9 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/wb_tokens.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/analytics/analytics_service.dart';
+import '../../../../core/widgets/wb_photo.dart';
 import '../../../authentication/presentation/auth_providers.dart';
+import '../../../restaurants/presentation/restaurant_actions.dart';
 import '../../data/recommendation_repository.dart';
 import '../../domain/recommendation.dart';
 
@@ -22,17 +24,24 @@ final _feedbackProvider = FutureProvider.autoDispose
           .feedbackFor(recId, myId);
     });
 
-/// A single recommendation: author, quote, what to order, photos, and the
-/// "was this accurate?" feedback flow for people who visited because of it.
+/// A recommendation, restaurant-first: the place leads (photo, name, where,
+/// price), the Taster's words follow, and the reviewer metadata sits in a
+/// quiet footer. Keeps the accuracy-feedback flow for visitors.
 class RecommendationCard extends ConsumerWidget {
   const RecommendationCard({super.key, required this.recommendation});
 
   final Recommendation recommendation;
 
+  void _openRestaurant(BuildContext context) => context.pushNamed(
+    Routes.restaurant,
+    pathParameters: {'id': recommendation.restaurantId},
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final author = recommendation.author;
+    final restaurant = recommendation.restaurant;
     final myId = ref.watch(sessionProvider)?.user.id;
     final isMine = myId == recommendation.userId;
     final feedback = ref.watch(_feedbackProvider(recommendation.id)).value;
@@ -41,154 +50,297 @@ class RecommendationCard extends ConsumerWidget {
     final positive =
         ((counts['exact'] as int?) ?? 0) + ((counts['great'] as int?) ?? 0);
 
+    final saved = (ref.watch(savedIdsProvider).value ?? {}).contains(
+      recommendation.restaurantId,
+    );
+    final visited = (ref.watch(visitedIdsProvider).value ?? {}).contains(
+      recommendation.restaurantId,
+    );
+
+    final city = (restaurant?['cities'] as Map?)?['name'] as String?;
+    final country =
+        ((restaurant?['cities'] as Map?)?['countries'] as Map?)?['name']
+            as String?;
+    final where = [city, country].whereType<String>().join(', ');
+    final price = restaurant?['price_level'] as int?;
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(WbSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: () => context.pushNamed(
-                Routes.taster,
-                pathParameters: {'id': recommendation.userId},
-              ),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(WbRadius.card),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── The restaurant leads ─────────────────────────────────────────
+          InkWell(
+            onTap: () => _openRestaurant(context),
+            child: Padding(
+              padding: const EdgeInsets.all(WbSpacing.sm + 2),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundImage: author?['avatar_url'] == null
-                        ? null
-                        : CachedNetworkImageProvider(
-                            author!['avatar_url'] as String,
-                          ),
-                    child: author?['avatar_url'] == null
-                        ? Text(
-                            ((author?['display_name'] as String?) ?? '?')
-                                .characters
-                                .first,
-                          )
-                        : null,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(WbRadius.chip + 2),
+                    child: SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: WbPhoto(
+                        source: restaurant?['cover_photo_url'] as String?,
+                        semanticLabel:
+                            'Photo of ${restaurant?['name'] ?? 'restaurant'}',
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: WbSpacing.sm),
+                  const SizedBox(width: WbSpacing.sm + 2),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                (author?['display_name'] as String?) ??
-                                    'Taster',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (author?['is_verified'] == true)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4),
-                                child: Icon(
-                                  Icons.verified,
-                                  size: 16,
-                                  color: WbColors.voyageLight,
-                                ),
-                              ),
-                          ],
-                        ),
                         Text(
-                          '@${author?['username'] ?? ''} · ${DateFormat.yMMMd().format(recommendation.createdAt)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          (restaurant?['name'] as String?) ?? 'Restaurant',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (where.isNotEmpty || price != null)
+                          Text(
+                            [
+                              if (where.isNotEmpty) where,
+                              if (price != null) '\$' * price,
+                            ].join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if (visited)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.where_to_vote,
+                                  size: 14,
+                                  color: WbColors.success,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'You visited',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: WbColors.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: saved ? 'Saved' : 'Save restaurant',
+                    onPressed: myId == null
+                        ? null
+                        : () => ref
+                              .read(savedIdsProvider.notifier)
+                              .toggle(recommendation.restaurantId),
+                    icon: Icon(
+                      saved ? Icons.bookmark : Icons.bookmark_outline,
+                      color: saved ? WbColors.ember : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ── The Taster's words ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.md,
+              0,
+              WbSpacing.md,
+              WbSpacing.sm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(recommendation.body, style: theme.textTheme.bodyMedium),
+                if (recommendation.whatToOrder != null) ...[
+                  const SizedBox(height: WbSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(WbSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: WbColors.emberSoft.withValues(
+                        alpha: theme.brightness == Brightness.dark ? 0.12 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(WbRadius.chip),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.restaurant_menu,
+                          size: 16,
+                          color: WbColors.ember,
+                        ),
+                        const SizedBox(width: WbSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            'Order: ${recommendation.whatToOrder}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (positive > 0)
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      avatar: const Icon(
-                        Icons.verified_user_outlined,
-                        size: 14,
-                      ),
-                      label: Text(
-                        '$positive found this accurate',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    ),
                 ],
-              ),
-            ),
-            const SizedBox(height: WbSpacing.sm),
-            Text(recommendation.body, style: theme.textTheme.bodyMedium),
-            if (recommendation.whatToOrder != null) ...[
-              const SizedBox(height: WbSpacing.sm),
-              Container(
-                padding: const EdgeInsets.all(WbSpacing.sm),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(WbRadius.chip),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.restaurant_menu, size: 16),
-                    const SizedBox(width: WbSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Order: ${recommendation.whatToOrder}',
-                        style: theme.textTheme.bodySmall,
+                if (recommendation.photos.isNotEmpty) ...[
+                  const SizedBox(height: WbSpacing.sm),
+                  SizedBox(
+                    height: 88,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recommendation.photos.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: WbSpacing.sm),
+                      itemBuilder: (context, i) => ClipRRect(
+                        borderRadius: BorderRadius.circular(WbRadius.chip),
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              recommendation.photos[i]['storage_path']
+                                  as String,
+                          width: 88,
+                          height: 88,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-            if (recommendation.photos.isNotEmpty) ...[
-              const SizedBox(height: WbSpacing.sm),
-              SizedBox(
-                height: 96,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: recommendation.photos.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(width: WbSpacing.sm),
-                  itemBuilder: (context, i) => ClipRRect(
-                    borderRadius: BorderRadius.circular(WbRadius.chip),
-                    child: CachedNetworkImage(
-                      imageUrl:
-                          recommendation.photos[i]['storage_path'] as String,
-                      width: 96,
-                      height: 96,
-                      fit: BoxFit.cover,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+          // ── Quiet reviewer footer ───────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.sm + 2,
+              WbSpacing.xs,
+              WbSpacing.sm,
+              WbSpacing.xs,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(WbRadius.pill),
+                    onTap: () => context.pushNamed(
+                      Routes.taster,
+                      pathParameters: {'id': recommendation.userId},
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundImage: author?['avatar_url'] == null
+                                ? null
+                                : CachedNetworkImageProvider(
+                                    author!['avatar_url'] as String,
+                                  ),
+                            child: author?['avatar_url'] == null
+                                ? Text(
+                                    ((author?['display_name'] as String?) ??
+                                            '?')
+                                        .characters
+                                        .first,
+                                    style: theme.textTheme.labelSmall,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              '${(author?['display_name'] as String?) ?? 'Taster'}'
+                              ' · ${DateFormat.yMMMd().format(recommendation.createdAt)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (author?['is_verified'] == true)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 3),
+                              child: Icon(
+                                Icons.verified,
+                                size: 13,
+                                color: WbColors.voyageLight,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-            if (!isMine && myId != null) ...[
-              const SizedBox(height: WbSpacing.sm),
-              mine != null
-                  ? Text(
-                      'You rated this: ${RecFeedbackRating.values.firstWhere((r) => r.value == mine).label}',
-                      style: theme.textTheme.labelMedium?.copyWith(
+                if (positive > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: WbSpacing.sm),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.verified_user_outlined,
+                          size: 13,
+                          color: WbColors.success,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$positive accurate',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: WbColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (!isMine && myId != null && mine == null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => _rate(context, ref),
+                    child: const Text('Rate it'),
+                  ),
+                if (mine != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: WbSpacing.sm),
+                    child: Text(
+                      'Rated',
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    )
-                  : TextButton.icon(
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      onPressed: () => _rate(context, ref),
-                      icon: const Icon(Icons.fact_check_outlined, size: 18),
-                      label: const Text('Visited because of this? Rate it'),
                     ),
-            ],
-          ],
-        ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

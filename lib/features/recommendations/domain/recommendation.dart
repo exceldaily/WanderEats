@@ -17,6 +17,9 @@ abstract class Recommendation with _$Recommendation {
     @JsonKey(name: 'created_at') required DateTime createdAt,
     // Joined author fields (profiles embed)
     @JsonKey(name: 'profiles') Map<String, dynamic>? author,
+    // Joined restaurant fields (restaurants embed): name, cover_photo_url,
+    // price_level, cities(name, countries(name)). The card leads with these.
+    @JsonKey(name: 'restaurants') Map<String, dynamic>? restaurant,
     // Joined photos
     @JsonKey(name: 'recommendation_photos')
     @Default(<Map<String, dynamic>>[])
