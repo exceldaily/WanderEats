@@ -31,6 +31,21 @@ abstract class AnalyticsService {
     required String id,
   });
   Future<void> subscriptionScreenViewed();
+
+  // BiteSwipe
+  Future<void> deckOpened({required String from});
+  Future<void> deckCardShown({
+    required String restaurantId,
+    required String reason,
+  });
+  Future<void> deckSaved({required String restaurantId});
+  Future<void> deckSkipped({required String restaurantId});
+  Future<void> deckUndo();
+  Future<void> deckTasterPreviewOpened({required String restaurantId});
+  Future<void> deckTasterFollowed({required String tasterId});
+  Future<void> deckFiltersChanged();
+  Future<void> deckCompleted({required int saved, required int tasters});
+  Future<void> deckSavedViewedOnMap({required int count});
 }
 
 /// Development fallback: logs events in debug builds, silent in release.
@@ -93,6 +108,40 @@ class DebugAnalyticsService implements AnalyticsService {
   }) => _log('share_initiated', {'content_type': contentType, 'id': id});
   @override
   Future<void> subscriptionScreenViewed() => _log('subscription_screen_viewed');
+
+  @override
+  Future<void> deckOpened({required String from}) =>
+      _log('deck_opened', {'from': from});
+  @override
+  Future<void> deckCardShown({
+    required String restaurantId,
+    required String reason,
+  }) => _log('deck_card_shown', {
+    'restaurant_id': restaurantId,
+    'reason': reason,
+  });
+  @override
+  Future<void> deckSaved({required String restaurantId}) =>
+      _log('deck_saved', {'restaurant_id': restaurantId});
+  @override
+  Future<void> deckSkipped({required String restaurantId}) =>
+      _log('deck_skipped', {'restaurant_id': restaurantId});
+  @override
+  Future<void> deckUndo() => _log('deck_undo');
+  @override
+  Future<void> deckTasterPreviewOpened({required String restaurantId}) =>
+      _log('deck_taster_preview_opened', {'restaurant_id': restaurantId});
+  @override
+  Future<void> deckTasterFollowed({required String tasterId}) =>
+      _log('deck_taster_followed', {'taster_id': tasterId});
+  @override
+  Future<void> deckFiltersChanged() => _log('deck_filters_changed');
+  @override
+  Future<void> deckCompleted({required int saved, required int tasters}) =>
+      _log('deck_completed', {'saved': saved, 'tasters': tasters});
+  @override
+  Future<void> deckSavedViewedOnMap({required int count}) =>
+      _log('deck_saved_viewed_on_map', {'count': count});
 }
 
 final analyticsProvider = Provider<AnalyticsService>((ref) {

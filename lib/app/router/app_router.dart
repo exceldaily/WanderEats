@@ -11,6 +11,7 @@ import '../../features/authentication/presentation/register_screen.dart';
 import '../../features/authentication/presentation/sign_in_screen.dart';
 import '../../features/authentication/presentation/splash_screen.dart';
 import '../../features/authentication/presentation/welcome_screen.dart';
+import '../../features/biteswipe/presentation/biteswipe_screen.dart';
 import '../../features/discovery/presentation/discover_screen.dart';
 import '../../features/discovery/presentation/search_screen.dart';
 import '../../features/lists/presentation/create_list_screen.dart';
@@ -166,6 +167,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/search',
         name: Routes.search,
         builder: (_, _) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/biteswipe',
+        name: Routes.biteswipe,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const BiteSwipeScreen(),
       ),
       GoRoute(
         path: '/saved',

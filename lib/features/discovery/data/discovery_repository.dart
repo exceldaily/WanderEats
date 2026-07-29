@@ -68,11 +68,7 @@ class DiscoveryRepository {
     try {
       final res = await Supabase.instance.client.functions.invoke(
         'places-search',
-        body: {
-          'query': query,
-          'lat': ?nearLat,
-          'lng': ?nearLng,
-        },
+        body: {'query': query, 'lat': ?nearLat, 'lng': ?nearLng},
       );
       final data = res.data;
       if (data is! Map) return const GlobalSearchResults.empty();

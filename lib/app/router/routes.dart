@@ -24,6 +24,7 @@ abstract final class Routes {
   static const createRecommendation = 'create-recommendation';
   static const createList = 'create-list';
   static const search = 'search';
+  static const biteswipe = 'biteswipe';
   static const feed = 'feed';
   static const savedRestaurants = 'saved';
   static const visitedRestaurants = 'visited';

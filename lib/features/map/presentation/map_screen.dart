@@ -186,6 +186,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       Expanded(child: _FilterBar()),
                       const SizedBox(width: WbSpacing.sm),
                       _RoundButton(
+                        icon: Icons.style_outlined,
+                        tooltip: 'BiteSwipe',
+                        onTap: () {
+                          unawaited(
+                            ref.read(analyticsProvider).deckOpened(from: 'map'),
+                          );
+                          context.pushNamed(Routes.biteswipe);
+                        },
+                      ),
+                      const SizedBox(width: WbSpacing.sm),
+                      _RoundButton(
                         icon: _listView ? Icons.map_outlined : Icons.list,
                         tooltip: _listView ? 'Map view' : 'List view',
                         onTap: () => setState(() => _listView = !_listView),
@@ -324,7 +335,9 @@ class _FilterBar extends ConsumerWidget {
           const SizedBox(width: WbSpacing.sm),
           FilterChip(
             label: const Text('Recommended'),
-            avatar: const Icon(Icons.thumb_up_alt_outlined, size: 16),
+            // Not a thumbs-up: this filters to places Tasters vouched for.
+            // A thumb reads as "like this", which is an action, not a filter.
+            avatar: const Icon(Icons.people_outline, size: 16),
             selected: filters.minRecs > 0,
             onSelected: (v) =>
                 notifier.setFilters(filters.copyWith(minRecs: v ? 1 : 0)),

@@ -99,4 +99,62 @@ class FirebaseAnalyticsServiceImpl implements AnalyticsService {
   @override
   Future<void> subscriptionScreenViewed() =>
       _analytics.logEvent(name: 'subscription_screen_viewed');
+
+  @override
+  Future<void> deckOpened({required String from}) =>
+      _analytics.logEvent(name: 'deck_opened', parameters: {'from': from});
+
+  @override
+  Future<void> deckCardShown({
+    required String restaurantId,
+    required String reason,
+  }) => _analytics.logEvent(
+    name: 'deck_card_shown',
+    parameters: {'restaurant_id': restaurantId, 'reason': reason},
+  );
+
+  @override
+  Future<void> deckSaved({required String restaurantId}) => _analytics.logEvent(
+    name: 'deck_saved',
+    parameters: {'restaurant_id': restaurantId},
+  );
+
+  @override
+  Future<void> deckSkipped({required String restaurantId}) =>
+      _analytics.logEvent(
+        name: 'deck_skipped',
+        parameters: {'restaurant_id': restaurantId},
+      );
+
+  @override
+  Future<void> deckUndo() => _analytics.logEvent(name: 'deck_undo');
+
+  @override
+  Future<void> deckTasterPreviewOpened({required String restaurantId}) =>
+      _analytics.logEvent(
+        name: 'deck_taster_preview_opened',
+        parameters: {'restaurant_id': restaurantId},
+      );
+
+  @override
+  Future<void> deckTasterFollowed({required String tasterId}) =>
+      _analytics.logEvent(
+        name: 'deck_taster_followed',
+        parameters: {'taster_id': tasterId},
+      );
+
+  @override
+  Future<void> deckFiltersChanged() =>
+      _analytics.logEvent(name: 'deck_filters_changed');
+
+  @override
+  Future<void> deckCompleted({required int saved, required int tasters}) =>
+      _analytics.logEvent(
+        name: 'deck_completed',
+        parameters: {'saved': saved, 'tasters': tasters},
+      );
+
+  @override
+  Future<void> deckSavedViewedOnMap({required int count}) => _analytics
+      .logEvent(name: 'deck_saved_viewed_on_map', parameters: {'count': count});
 }

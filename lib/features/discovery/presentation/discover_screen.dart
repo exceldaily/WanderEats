@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../lists/data/list_repository.dart';
@@ -82,6 +85,35 @@ class _ForYouTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: WbSpacing.md),
         children: [
+          // BiteSwipe entry: prominent but one card, not a takeover.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.md,
+              0,
+              WbSpacing.md,
+              WbSpacing.sm,
+            ),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.style_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                title: const Text('BiteSwipe'),
+                subtitle: const Text(
+                  'Looking for somewhere to eat? Swipe through nearby picks.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  unawaited(
+                    ref.read(analyticsProvider).deckOpened(from: 'discover'),
+                  );
+                  context.pushNamed(Routes.biteswipe);
+                },
+              ),
+            ),
+          ),
           _SectionHeader(title: 'Trending Tasters'),
           SizedBox(
             height: 120,
