@@ -9,7 +9,9 @@ import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/widgets/wb_states.dart';
+import '../../map/presentation/map_controller.dart';
 import '../data/discovery_repository.dart';
+import '../domain/global_area.dart';
 
 /// Universal search: restaurants, tasters, lists, cities, cuisines, grouped.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -35,7 +37,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   Timer? _debounce;
   Map<String, dynamic>? _results;
+  GlobalSearchResults? _global;
   bool _loading = false;
+  bool _globalLoading = false;
   String? _error;
   List<String> _recent = [];
 
@@ -68,10 +72,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _debounce = Timer(const Duration(milliseconds: 350), () => _search(value));
   }
 
-  Future<void> _search(String value) async {
+  Future<void> _search(String value, {bool submitted = false}) async {
     final query = value.trim();
     if (query.length < 2) {
-      setState(() => _results = null);
+      setState(() {
+        _results = null;
+        _global = null;
+      });
       return;
     }
     setState(() {
@@ -97,11 +104,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
       unawaited(_saveRecent(query));
       setState(() => _results = results);
+
+      // Reach worldwide when what we hold locally is thin, or when the user
+      // explicitly submitted. This is the trip-planning path: searching a city
+      // or a restaurant nobody has imported yet still has to work. It costs a
+      // provider call, hence never on plain typing with good local hits.
+      final localRestaurants = ((results['restaurants'] as List?)?.length ?? 0);
+      final localCities = ((results['cities'] as List?)?.length ?? 0);
+      if (submitted || localRestaurants + localCities < 3) {
+        unawaited(_searchGlobal(query));
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _searchGlobal(String query) async {
+    setState(() => _globalLoading = true);
+    final global = await ref
+        .read(discoveryRepositoryProvider)
+        .searchGlobal(query);
+    if (!mounted || _controller.text.trim() != query) return;
+    setState(() {
+      _global = global;
+      _globalLoading = false;
+    });
+  }
+
+  /// Send the map to a searched place. The map imports restaurants for the
+  /// area on arrival, so an untouched city fills in by itself.
+  void _exploreArea(GlobalArea area) {
+    ref
+        .read(mapDestinationProvider.notifier)
+        .go(
+          MapDestination(
+            lat: area.lat,
+            lng: area.lng,
+            label: area.name,
+            neLat: area.neLat,
+            neLng: area.neLng,
+            swLat: area.swLat,
+            swLng: area.swLng,
+          ),
+        );
+    context.goNamed(Routes.map);
   }
 
   @override
@@ -118,7 +166,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             border: InputBorder.none,
           ),
           onChanged: _onChanged,
-          onSubmitted: _search,
+          onSubmitted: (v) => _search(v, submitted: true),
         ),
         actions: [
           if (_controller.text.isNotEmpty)
@@ -126,7 +174,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               icon: const Icon(Icons.clear),
               onPressed: () {
                 _controller.clear();
-                setState(() => _results = null);
+                setState(() {
+                  _results = null;
+                  _global = null;
+                });
               },
             ),
         ],
@@ -144,7 +195,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_error != null) {
       return WbErrorState(
         message: _error!,
-        onRetry: () => _search(_controller.text),
+        onRetry: () => _search(_controller.text, submitted: true),
       );
     }
     if (_results == null) {
@@ -214,11 +265,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         cities.isEmpty &&
         cuisines.isEmpty;
 
-    if (empty) {
-      return const WbEmptyState(
+    final areas = _global?.areas ?? const <GlobalArea>[];
+    final globalRestaurants = _global?.restaurants ?? const [];
+
+    if (empty && areas.isEmpty && globalRestaurants.isEmpty) {
+      if (_globalLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return WbEmptyState(
         icon: Icons.search_off,
         title: 'Nothing found',
-        message: 'Try a different spelling or a broader term.',
+        message: _global == null
+            ? 'Try a different spelling, or press search to look worldwide.'
+            : 'Try a different spelling or a broader term.',
       );
     }
 
@@ -239,6 +298,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return ListView(
       children: [
+        // Places to go come first when present: for trip planning, picking the
+        // destination is the move that unlocks everything else.
+        if (areas.isNotEmpty) ...[
+          header('Places to explore'),
+          for (final a in areas)
+            ListTile(
+              leading: const Icon(Icons.travel_explore),
+              title: Text(a.name),
+              subtitle: a.subtitle.isEmpty ? null : Text(a.subtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _exploreArea(a),
+            ),
+        ],
+        if (_globalLoading)
+          const Padding(
+            padding: EdgeInsets.all(WbSpacing.md),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: WbSpacing.sm),
+                Text('Searching worldwide...'),
+              ],
+            ),
+          ),
         if (restaurants.isNotEmpty) ...[
           header('Restaurants'),
           for (final r in restaurants.cast<Map<String, dynamic>>())
@@ -297,6 +384,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               onTap: () {
                 _controller.text = c['name'] as String;
                 unawaited(_search(c['name'] as String));
+              },
+            ),
+        ],
+        // Names found worldwide that we did not already hold locally.
+        if (globalRestaurants.isNotEmpty) ...[
+          header('Restaurants worldwide'),
+          for (final r in globalRestaurants)
+            ListTile(
+              leading: const Icon(Icons.public),
+              title: Text((r['name'] ?? 'Unnamed').toString()),
+              subtitle: Text(
+                (r['address'] ?? r['city_name'] ?? '').toString(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () {
+                final id = r['id'];
+                if (id is String) {
+                  context.pushNamed(
+                    Routes.restaurant,
+                    pathParameters: {'id': id},
+                  );
+                }
               },
             ),
         ],

@@ -64,6 +64,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// Fly to a place chosen in search. Consumes the request so re-entering the
+  /// tab later does not yank the camera back.
+  Future<void> _goToDestination(MapDestination d) async {
+    final map = _map;
+    if (map == null) return;
+    ref.read(mapDestinationProvider.notifier).clear();
+
+    if (d.hasViewport) {
+      await map.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(d.swLat!, d.swLng!),
+            northeast: LatLng(d.neLat!, d.neLng!),
+          ),
+          48,
+        ),
+      );
+    } else {
+      await map.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(d.lat, d.lng), 14),
+      );
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Exploring ${d.label}')));
+    }
+  }
+
   Future<void> _onCameraIdle() async {
     final bounds = await _map?.getVisibleRegion();
     if (bounds != null) {
@@ -73,6 +102,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Search hands the map a place to fly to; act on it once it arrives.
+    ref.listen<MapDestination?>(mapDestinationProvider, (_, next) {
+      if (next != null) unawaited(_goToDestination(next));
+    });
+
     if (!Env.hasMapsKey) {
       return const Scaffold(
         body: SafeArea(

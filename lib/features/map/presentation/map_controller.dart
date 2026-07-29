@@ -73,6 +73,48 @@ class MapViewState {
   );
 }
 
+/// Somewhere the map has been asked to fly to, typically from search.
+///
+/// Carries an optional provider viewport so a country frames as a country and
+/// a neighbourhood frames as a neighbourhood, instead of one guessed zoom.
+class MapDestination {
+  const MapDestination({
+    required this.lat,
+    required this.lng,
+    required this.label,
+    this.neLat,
+    this.neLng,
+    this.swLat,
+    this.swLng,
+  });
+
+  final double lat;
+  final double lng;
+  final String label;
+  final double? neLat;
+  final double? neLng;
+  final double? swLat;
+  final double? swLng;
+
+  bool get hasViewport =>
+      neLat != null && neLng != null && swLat != null && swLng != null;
+}
+
+/// Set by search, consumed once by the map screen then cleared.
+class MapDestinationController extends Notifier<MapDestination?> {
+  @override
+  MapDestination? build() => null;
+
+  void go(MapDestination destination) => state = destination;
+
+  void clear() => state = null;
+}
+
+final mapDestinationProvider =
+    NotifierProvider<MapDestinationController, MapDestination?>(
+      MapDestinationController.new,
+    );
+
 final mapControllerProvider = NotifierProvider<MapViewController, MapViewState>(
   MapViewController.new,
 );

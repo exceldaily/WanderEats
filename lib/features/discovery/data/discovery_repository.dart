@@ -5,6 +5,7 @@ import '../../../core/errors/app_exception.dart';
 import '../../../core/networking/supabase_provider.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../restaurants/domain/restaurant.dart';
+import '../domain/global_area.dart';
 
 class DiscoveryRepository {
   DiscoveryRepository(this._schema);
@@ -49,6 +50,44 @@ class DiscoveryRepository {
       );
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
+    }
+  }
+
+  /// Worldwide search for trip planning: areas to travel to, and restaurants
+  /// by name anywhere — including places nobody has imported yet.
+  ///
+  /// Costs a provider call, so callers should only reach for this on an
+  /// explicit submit or when [searchAll] came back thin. Failures return empty
+  /// rather than throwing: local results are already on screen, and losing the
+  /// global extras should never blank out the page.
+  Future<GlobalSearchResults> searchGlobal(
+    String query, {
+    double? nearLat,
+    double? nearLng,
+  }) async {
+    try {
+      final res = await Supabase.instance.client.functions.invoke(
+        'places-search',
+        body: {
+          'query': query,
+          'lat': ?nearLat,
+          'lng': ?nearLng,
+        },
+      );
+      final data = res.data;
+      if (data is! Map) return const GlobalSearchResults.empty();
+      return GlobalSearchResults(
+        areas: ((data['areas'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((m) => GlobalArea.fromJson(m.cast<String, dynamic>()))
+            .toList(),
+        restaurants: ((data['restaurants'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((m) => m.cast<String, dynamic>())
+            .toList(),
+      );
+    } catch (_) {
+      return const GlobalSearchResults.empty();
     }
   }
 
