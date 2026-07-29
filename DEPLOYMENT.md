@@ -44,3 +44,99 @@ flutter build apk --release --dart-define-from-file=dart_defines/prod.json
 ## 5. OTA-free updates
 
 Flutter has no OTA equivalent to Expo Updates; every change ships through a store build. Keep versionCode bumping in pubspec version (x.y.z+N).
+
+---
+
+# Play Store submission runbook
+
+Written 29 July 2026. Steps marked **[you]** need a human — payment, Play
+Console access, or a hosting decision.
+
+## Before the first upload
+
+1. **[you] Play Console account** — $25 one-time, developer identity
+   verification. https://play.google.com/console/signup
+2. **[you] Host the privacy policy.** `PRIVACY.md` is written and ready.
+   Any public URL works (GitHub Pages, a Vercel page, a Notion page). Two
+   places need the link: the Play listing, and the account-deletion section
+   below.
+3. **[you] Host a deletion-request page.** Play requires a URL reachable
+   *without installing the app*. It can be one paragraph pointing at
+   exceldaily7@gmail.com; the content is already drafted in PRIVACY.md
+   under "Your choices and rights".
+
+## Build
+
+```bash
+python tool/generate_icons.py          # only if branding changed
+dart run flutter_launcher_icons        # only if branding changed
+flutter build appbundle --release --dart-define-from-file=dart_defines/dev.json
+```
+
+Artifact: `build/app/outputs/bundle/release/app-release.aab`.
+Play requires the .aab, not the .apk.
+
+Bump `version:` in pubspec.yaml for every upload — Play rejects a reused
+versionCode. Format `x.y.z+N`; N is the versionCode.
+
+## Maps will break on the first Play build unless you do this
+
+Play App Signing re-signs the app with **Google's** certificate, not the
+upload keystore. The Maps key is restricted to specific SHA-1 fingerprints,
+so a Play-signed build hits a key it is not allowed to use and **the map
+renders blank** — while the sideloaded build keeps working perfectly. This
+is easy to miss.
+
+After the first upload:
+
+1. Play Console → your app → **Test and release → Setup → App signing**
+2. Copy the **SHA-1** under "App signing key certificate"
+3. https://console.cloud.google.com/apis/credentials?project=wanderbites-503816
+   → "WanderBites Maps Android" → Android restrictions → **Add**
+   package `com.wanderbites.app` + that SHA-1
+4. Wait ~5 minutes, then re-test the map in the internal-testing build
+
+The upload-key and local debug SHA-1s are already registered; this adds a
+third.
+
+## Store listing
+
+All copy, data-safety answers and the content-rating questionnaire are in
+`STORE_LISTING.md`. Assets:
+
+- Icon: `branding/play_icon_512.png` (512×512, no alpha — Play rejects alpha)
+- Feature graphic: `branding/feature_graphic.png` (1024×500)
+- Screenshots: capture list is in STORE_LISTING.md
+
+## Release order
+
+1. **Internal testing** first. Verify: map renders (see SHA-1 step above),
+   Google sign-in works, a recommendation posts with a photo, account
+   deletion completes.
+2. **Closed testing** with real people if you want feedback before launch.
+3. **Production**.
+
+## Demo content
+
+Seeded Tasters are flagged `is_demo` and render a "Sample" badge everywhere
+they appear. To hide them entirely once real users are posting:
+
+```sql
+update wanderbites.app_settings
+set value = 'false'::jsonb, updated_at = now()
+where key = 'show_demo_content';
+```
+
+No app release needed — it takes effect on next fetch. Seeded *restaurants*
+are real places and stay regardless.
+
+## Operational limits to watch at launch
+
+- **Auth email**: Brevo SMTP, 30/hour. Fine for a soft launch; raise the
+  Supabase rate limit and Brevo plan before any real volume.
+- **Maps/Places**: $200/month standing credit plus 10K free calls per SKU;
+  tile caching means panning over covered ground costs nothing. Budget alert
+  set at $10 with emails at 50/90/100%.
+- **Shared auth pool**: WanderBites signups land in the same `auth.users` as
+  the other OrbitStack apps. Account deletion removes the WanderBites profile
+  only, never the shared auth row.

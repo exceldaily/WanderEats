@@ -14,6 +14,7 @@ abstract class Profile with _$Profile {
     @JsonKey(name: 'header_url') String? headerUrl,
     @JsonKey(name: 'home_city_id') String? homeCityId,
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
+    @JsonKey(name: 'is_demo') @Default(false) bool isDemo,
     @JsonKey(name: 'is_admin') @Default(false) bool isAdmin,
     @JsonKey(name: 'onboarding_completed')
     @Default(false)

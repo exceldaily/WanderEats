@@ -15,6 +15,7 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
   headerUrl: json['header_url'] as String?,
   homeCityId: json['home_city_id'] as String?,
   isVerified: json['is_verified'] as bool? ?? false,
+  isDemo: json['is_demo'] as bool? ?? false,
   isAdmin: json['is_admin'] as bool? ?? false,
   onboardingCompleted: json['onboarding_completed'] as bool? ?? false,
   favoriteCuisines:
@@ -43,6 +44,7 @@ Map<String, dynamic> _$ProfileToJson(_Profile instance) => <String, dynamic>{
   'header_url': instance.headerUrl,
   'home_city_id': instance.homeCityId,
   'is_verified': instance.isVerified,
+  'is_demo': instance.isDemo,
   'is_admin': instance.isAdmin,
   'onboarding_completed': instance.onboardingCompleted,
   'favorite_cuisines': instance.favoriteCuisines,

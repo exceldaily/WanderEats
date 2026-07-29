@@ -156,6 +156,14 @@ class ProfileHeader extends ConsumerWidget {
                         semanticLabel: 'Verified Taster',
                       ),
                     ),
+                  // Sample accounts are labelled wherever they appear: the
+                  // product is about trusting real people's taste, so an
+                  // invented Taster must never read as a real one.
+                  if (profile.isDemo)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: DemoBadge(),
+                    ),
                 ],
               ),
               Text(
@@ -329,4 +337,42 @@ class _GlyphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Marks a sample account. Deliberately plain and always paired with the word
+/// "Sample" - a colour or icon alone would not communicate this.
+class DemoBadge extends StatelessWidget {
+  const DemoBadge({super.key, this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: 'Sample account. Not a real person.',
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 5 : 7,
+          vertical: compact ? 1 : 2,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(WbRadius.pill),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Text(
+          'Sample',
+          style:
+              (compact
+                      ? theme.textTheme.labelSmall
+                      : theme.textTheme.labelMedium)
+                  ?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+        ),
+      ),
+    );
+  }
 }

@@ -11,7 +11,7 @@ class RecommendationRepository {
   final SupabaseQuerySchema _schema;
 
   static const _select =
-      '*, profiles(username, display_name, avatar_url, is_verified), '
+      '*, profiles(username, display_name, avatar_url, is_verified, is_demo), '
       'recommendation_photos(storage_path, position), '
       'restaurants(name, cover_photo_url, price_level, '
       'cities(name, countries(name)))';

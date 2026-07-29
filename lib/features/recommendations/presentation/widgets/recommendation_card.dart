@@ -12,6 +12,7 @@ import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/analytics/analytics_service.dart';
 import '../../../../core/widgets/wb_photo.dart';
 import '../../../authentication/presentation/auth_providers.dart';
+import '../../../profile/presentation/widgets/profile_header.dart';
 import '../../../restaurants/presentation/restaurant_actions.dart';
 import '../../data/recommendation_repository.dart';
 import '../../domain/recommendation.dart';
@@ -292,6 +293,11 @@ class RecommendationCard extends ConsumerWidget {
                                 size: 13,
                                 color: WbColors.voyageLight,
                               ),
+                            ),
+                          if (author?['is_demo'] == true)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: DemoBadge(compact: true),
                             ),
                         ],
                       ),
