@@ -9,8 +9,9 @@ import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../profile/data/profile_repository.dart';
 
-final settingsProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
+  ref,
+) async {
   final session = ref.watch(sessionProvider);
   if (session == null) return null;
   return ref.watch(profileRepositoryProvider).fetchSettings(session.user.id);
@@ -19,13 +20,12 @@ final settingsProvider =
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  Future<void> _update(
-      WidgetRef ref, String key, Object? value) async {
+  Future<void> _update(WidgetRef ref, String key, Object? value) async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
-    await ref
-        .read(profileRepositoryProvider)
-        .updateSettings(session.user.id, {key: value});
+    await ref.read(profileRepositoryProvider).updateSettings(session.user.id, {
+      key: value,
+    });
     ref.invalidate(settingsProvider);
   }
 
@@ -40,8 +40,7 @@ class SettingsScreen extends ConsumerWidget {
       body: settings == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding:
-                  const EdgeInsets.symmetric(vertical: WbSpacing.sm),
+              padding: const EdgeInsets.symmetric(vertical: WbSpacing.sm),
               children: [
                 const _Header('Notifications'),
                 SwitchListTile(
@@ -67,8 +66,7 @@ class SettingsScreen extends ConsumerWidget {
                 SwitchListTile(
                   title: const Text('Taster activity'),
                   value: flag('notif_taster_activity'),
-                  onChanged: (v) =>
-                      _update(ref, 'notif_taster_activity', v),
+                  onChanged: (v) => _update(ref, 'notif_taster_activity', v),
                 ),
                 SwitchListTile(
                   title: const Text('Badge unlocks'),
@@ -78,16 +76,14 @@ class SettingsScreen extends ConsumerWidget {
                 const _Header('Privacy'),
                 SwitchListTile(
                   title: const Text('Public profile'),
-                  subtitle:
-                      const Text('Others can view your profile and maps'),
+                  subtitle: const Text('Others can view your profile and maps'),
                   value: flag('profile_public'),
                   onChanged: (v) => _update(ref, 'profile_public', v),
                 ),
                 SwitchListTile(
                   title: const Text('Show visited places publicly'),
                   value: flag('show_visited_publicly'),
-                  onChanged: (v) =>
-                      _update(ref, 'show_visited_publicly', v),
+                  onChanged: (v) => _update(ref, 'show_visited_publicly', v),
                 ),
                 const _Header('Account'),
                 ListTile(
@@ -104,13 +100,19 @@ class SettingsScreen extends ConsumerWidget {
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.delete_forever_outlined,
-                      color: Theme.of(context).colorScheme.error),
-                  title: Text('Delete account',
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
+                  leading: Icon(
+                    Icons.delete_forever_outlined,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    'Delete account',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                   subtitle: const Text(
-                      'Removes your WanderBites profile, recommendations, lists and photos'),
+                    'Removes your WanderBites profile, recommendations, lists and photos',
+                  ),
                   onTap: () => _confirmDelete(context, ref),
                 ),
               ],
@@ -124,14 +126,17 @@ class SettingsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Delete your account?'),
         content: const Text(
-            'This permanently removes your WanderBites profile and everything you have published. This cannot be undone.'),
+          'This permanently removes your WanderBites profile and everything you have published. This cannot be undone.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete forever'),
           ),
@@ -144,8 +149,9 @@ class SettingsScreen extends ConsumerWidget {
       if (context.mounted) context.goNamed(Routes.welcome);
     } on AppException catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
   }
@@ -160,11 +166,18 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          WbSpacing.md, WbSpacing.md, WbSpacing.md, WbSpacing.xs),
-      child: Text(title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary)),
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.xs,
+      ),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
     );
   }
 }

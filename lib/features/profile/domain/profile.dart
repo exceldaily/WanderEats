@@ -15,8 +15,12 @@ abstract class Profile with _$Profile {
     @JsonKey(name: 'home_city_id') String? homeCityId,
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
     @JsonKey(name: 'is_admin') @Default(false) bool isAdmin,
-    @JsonKey(name: 'onboarding_completed') @Default(false) bool onboardingCompleted,
-    @JsonKey(name: 'favorite_cuisines') @Default(<String>[]) List<String> favoriteCuisines,
+    @JsonKey(name: 'onboarding_completed')
+    @Default(false)
+    bool onboardingCompleted,
+    @JsonKey(name: 'favorite_cuisines')
+    @Default(<String>[])
+    List<String> favoriteCuisines,
     @JsonKey(name: 'created_at') required DateTime createdAt,
   }) = _Profile;
 

@@ -35,10 +35,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _error = null;
     });
     try {
-      await ref.read(authRepositoryProvider).signInWithEmail(
-            email: _email.text.trim(),
-            password: _password.text,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithEmail(email: _email.text.trim(), password: _password.text);
       if (mounted) context.goNamed(Routes.map);
     } on AppException catch (e) {
       setState(() => _error = e.message);
@@ -80,9 +79,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: WbSpacing.md),
-                Text(_error!,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: WbSpacing.lg),
               FilledButton(
@@ -91,7 +91,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Sign in'),
               ),
               TextButton(

@@ -22,7 +22,9 @@ class ReferenceRepository {
 
   Future<List<Cuisine>> fetchCuisines() async {
     try {
-      final rows = await _db('cuisines').select().order('name', ascending: true);
+      final rows = await _db(
+        'cuisines',
+      ).select().order('name', ascending: true);
       return rows.map(Cuisine.fromJson).toList();
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);

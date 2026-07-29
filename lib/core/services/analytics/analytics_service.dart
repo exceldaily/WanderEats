@@ -16,18 +16,29 @@ abstract class AnalyticsService {
   Future<void> restaurantVisited({required String restaurantId});
   Future<void> tasterFollowed({required String tasterId});
   Future<void> recommendationCreated({required String restaurantId});
-  Future<void> recommendationFeedbackSubmitted({required String recommendationId});
+  Future<void> recommendationFeedbackSubmitted({
+    required String recommendationId,
+  });
   Future<void> listCreated({required String listId});
   Future<void> listFollowed({required String listId});
-  Future<void> searchPerformed({required String query, required int resultCount});
+  Future<void> searchPerformed({
+    required String query,
+    required int resultCount,
+  });
   Future<void> directionsOpened({required String restaurantId});
-  Future<void> shareInitiated({required String contentType, required String id});
+  Future<void> shareInitiated({
+    required String contentType,
+    required String id,
+  });
   Future<void> subscriptionScreenViewed();
 }
 
 /// Development fallback: logs events in debug builds, silent in release.
 class DebugAnalyticsService implements AnalyticsService {
-  Future<void> _log(String event, [Map<String, Object?> params = const {}]) async {
+  Future<void> _log(
+    String event, [
+    Map<String, Object?> params = const {},
+  ]) async {
     if (kDebugMode) {
       debugPrint('[analytics] $event ${params.isEmpty ? '' : params}');
     }
@@ -56,8 +67,11 @@ class DebugAnalyticsService implements AnalyticsService {
   Future<void> recommendationCreated({required String restaurantId}) =>
       _log('recommendation_created', {'restaurant_id': restaurantId});
   @override
-  Future<void> recommendationFeedbackSubmitted({required String recommendationId}) =>
-      _log('recommendation_feedback_submitted', {'recommendation_id': recommendationId});
+  Future<void> recommendationFeedbackSubmitted({
+    required String recommendationId,
+  }) => _log('recommendation_feedback_submitted', {
+    'recommendation_id': recommendationId,
+  });
   @override
   Future<void> listCreated({required String listId}) =>
       _log('list_created', {'list_id': listId});
@@ -65,14 +79,18 @@ class DebugAnalyticsService implements AnalyticsService {
   Future<void> listFollowed({required String listId}) =>
       _log('list_followed', {'list_id': listId});
   @override
-  Future<void> searchPerformed({required String query, required int resultCount}) =>
-      _log('search_performed', {'query': query, 'result_count': resultCount});
+  Future<void> searchPerformed({
+    required String query,
+    required int resultCount,
+  }) => _log('search_performed', {'query': query, 'result_count': resultCount});
   @override
   Future<void> directionsOpened({required String restaurantId}) =>
       _log('directions_opened', {'restaurant_id': restaurantId});
   @override
-  Future<void> shareInitiated({required String contentType, required String id}) =>
-      _log('share_initiated', {'content_type': contentType, 'id': id});
+  Future<void> shareInitiated({
+    required String contentType,
+    required String id,
+  }) => _log('share_initiated', {'content_type': contentType, 'id': id});
   @override
   Future<void> subscriptionScreenViewed() => _log('subscription_screen_viewed');
 }

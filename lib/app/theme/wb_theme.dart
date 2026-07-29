@@ -10,17 +10,20 @@ abstract final class WbTheme {
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
-    final scheme = ColorScheme.fromSeed(
-      seedColor: WbColors.voyage,
-      brightness: brightness,
-    ).copyWith(
-      primary: isDark ? WbColors.voyageLight : WbColors.voyage,
-      secondary: WbColors.ember,
-      surface: isDark ? WbColors.nightSurface : WbColors.cream,
-      surfaceContainerLow: isDark ? WbColors.nightCard : Colors.white,
-      surfaceContainerHighest: isDark ? WbColors.nightBorder : WbColors.sand,
-      error: WbColors.danger,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: WbColors.voyage,
+          brightness: brightness,
+        ).copyWith(
+          primary: isDark ? WbColors.voyageLight : WbColors.voyage,
+          secondary: WbColors.ember,
+          surface: isDark ? WbColors.nightSurface : WbColors.cream,
+          surfaceContainerLow: isDark ? WbColors.nightCard : Colors.white,
+          surfaceContainerHighest: isDark
+              ? WbColors.nightBorder
+              : WbColors.sand,
+          error: WbColors.danger,
+        );
 
     final textTheme = Typography.material2021(platform: TargetPlatform.android)
         .englishLike
@@ -94,7 +97,9 @@ abstract final class WbTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: scheme.surfaceContainerLow,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(WbRadius.sheet)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(WbRadius.sheet),
+          ),
         ),
         showDragHandle: true,
       ),

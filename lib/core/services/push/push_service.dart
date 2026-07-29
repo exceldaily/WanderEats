@@ -32,7 +32,10 @@ class NoopPushService implements PushService {
   }
 
   @override
-  Future<void> registerToken(String token, {String platform = 'android'}) async {
+  Future<void> registerToken(
+    String token, {
+    String platform = 'android',
+  }) async {
     // Token persistence works today; only token GENERATION needs Firebase.
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) return;

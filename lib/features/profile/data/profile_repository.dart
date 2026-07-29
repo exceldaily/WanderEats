@@ -13,11 +13,9 @@ class ProfileRepository {
 
   Future<Profile?> fetchProfile(String userId) async {
     try {
-      final row = await _db('profiles')
-          .select()
-          .eq('id', userId)
-          .isFilter('deleted_at', null)
-          .maybeSingle();
+      final row = await _db(
+        'profiles',
+      ).select().eq('id', userId).isFilter('deleted_at', null).maybeSingle();
       return row == null ? null : Profile.fromJson(row);
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
@@ -38,10 +36,9 @@ class ProfileRepository {
   }
 
   Future<bool> isUsernameAvailable(String username) async {
-    final row = await _db('profiles')
-        .select('id')
-        .eq('username', username)
-        .maybeSingle();
+    final row = await _db(
+      'profiles',
+    ).select('id').eq('username', username).maybeSingle();
     return row == null;
   }
 
@@ -57,16 +54,19 @@ class ProfileRepository {
     String? avatarUrl,
   }) async {
     try {
-      final row = await _db('profiles').insert({
-        'id': userId,
-        'username': username,
-        'display_name': displayName,
-        if (bio != null && bio.isNotEmpty) 'bio': bio,
-        'home_city_id': ?homeCityId,
-        'favorite_cuisines': favoriteCuisines,
-        'avatar_url': ?avatarUrl,
-        'onboarding_completed': true,
-      }).select().single();
+      final row = await _db('profiles')
+          .insert({
+            'id': userId,
+            'username': username,
+            'display_name': displayName,
+            if (bio != null && bio.isNotEmpty) 'bio': bio,
+            'home_city_id': ?homeCityId,
+            'favorite_cuisines': favoriteCuisines,
+            'avatar_url': ?avatarUrl,
+            'onboarding_completed': true,
+          })
+          .select()
+          .single();
       // Default settings row (owner-only by RLS).
       await _db('user_settings').upsert({'user_id': userId});
       return Profile.fromJson(row);
@@ -79,20 +79,15 @@ class ProfileRepository {
   }
 
   Future<Map<String, dynamic>> fetchSettings(String userId) async {
-    final row = await _db('user_settings')
-        .select()
-        .eq('user_id', userId)
-        .maybeSingle();
+    final row = await _db(
+      'user_settings',
+    ).select().eq('user_id', userId).maybeSingle();
     if (row != null) return row;
     await _db('user_settings').upsert({'user_id': userId});
-    return (await _db('user_settings')
-        .select()
-        .eq('user_id', userId)
-        .single());
+    return (await _db('user_settings').select().eq('user_id', userId).single());
   }
 
-  Future<void> updateSettings(
-      String userId, Map<String, dynamic> patch) async {
+  Future<void> updateSettings(String userId, Map<String, dynamic> patch) async {
     try {
       await _db('user_settings').update(patch).eq('user_id', userId);
     } on PostgrestException catch (e) {
@@ -109,13 +104,14 @@ class ProfileRepository {
     return rows;
   }
 
-  Future<Profile> updateProfile(String userId, Map<String, dynamic> patch) async {
+  Future<Profile> updateProfile(
+    String userId,
+    Map<String, dynamic> patch,
+  ) async {
     try {
-      final row = await _db('profiles')
-          .update(patch)
-          .eq('id', userId)
-          .select()
-          .single();
+      final row = await _db(
+        'profiles',
+      ).update(patch).eq('id', userId).select().single();
       return Profile.fromJson(row);
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);

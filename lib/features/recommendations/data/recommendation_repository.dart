@@ -13,8 +13,11 @@ class RecommendationRepository {
   static const _select =
       '*, profiles(username, display_name, avatar_url, is_verified), recommendation_photos(storage_path, position)';
 
-  Future<List<Recommendation>> forRestaurant(String restaurantId,
-      {int limit = 20, int offset = 0}) async {
+  Future<List<Recommendation>> forRestaurant(
+    String restaurantId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
       final rows = await _schema
           .from('recommendations')
@@ -29,8 +32,11 @@ class RecommendationRepository {
     }
   }
 
-  Future<List<Recommendation>> byUser(String userId,
-      {int limit = 20, int offset = 0}) async {
+  Future<List<Recommendation>> byUser(
+    String userId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
       final rows = await _schema
           .from('recommendations')
@@ -56,17 +62,21 @@ class RecommendationRepository {
     List<String> photoUrls = const [],
   }) async {
     try {
-      final row = await _schema.from('recommendations').insert({
-        'user_id': userId,
-        'restaurant_id': restaurantId,
-        'body': body,
-        if (whatToOrder != null && whatToOrder.isNotEmpty)
-          'what_to_order': whatToOrder,
-        'price_impression': ?priceImpression,
-        if (visitedOn != null)
-          'visited_on': visitedOn.toIso8601String().substring(0, 10),
-        'visibility': visibility,
-      }).select().single();
+      final row = await _schema
+          .from('recommendations')
+          .insert({
+            'user_id': userId,
+            'restaurant_id': restaurantId,
+            'body': body,
+            if (whatToOrder != null && whatToOrder.isNotEmpty)
+              'what_to_order': whatToOrder,
+            'price_impression': ?priceImpression,
+            if (visitedOn != null)
+              'visited_on': visitedOn.toIso8601String().substring(0, 10),
+            'visibility': visibility,
+          })
+          .select()
+          .single();
       final recId = row['id'] as String;
       if (photoUrls.isNotEmpty) {
         await _schema.from('recommendation_photos').insert([
@@ -75,14 +85,15 @@ class RecommendationRepository {
               'recommendation_id': recId,
               'storage_path': photoUrls[i],
               'position': i,
-            }
+            },
         ]);
       }
       return Recommendation.fromJson(row);
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
         throw const ValidationException(
-            'You already recommended this place. Edit your existing recommendation instead.');
+          'You already recommended this place. Edit your existing recommendation instead.',
+        );
       }
       throw ServerException(cause: e);
     }
@@ -106,7 +117,9 @@ class RecommendationRepository {
 
   /// Returns rating counts for a recommendation, plus the caller's own rating.
   Future<Map<String, dynamic>> feedbackFor(
-      String recommendationId, String? myUserId) async {
+    String recommendationId,
+    String? myUserId,
+  ) async {
     final rows = await _schema
         .from('recommendation_feedback')
         .select('rating, user_id')
@@ -139,14 +152,16 @@ class RecommendationRepository {
       // 42501: RLS rejection, e.g. trying to rate your own recommendation.
       if (e.code == '42501') {
         throw const PermissionDeniedException(
-            'You cannot rate your own recommendation.');
+          'You cannot rate your own recommendation.',
+        );
       }
       throw ServerException(cause: e);
     }
   }
 }
 
-final recommendationRepositoryProvider =
-    Provider<RecommendationRepository>((ref) {
+final recommendationRepositoryProvider = Provider<RecommendationRepository>((
+  ref,
+) {
   return RecommendationRepository(ref.watch(wbSchemaProvider));
 });

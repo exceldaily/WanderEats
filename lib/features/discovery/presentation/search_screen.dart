@@ -22,8 +22,14 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   static const _recentKey = 'wb_recent_searches_v1';
   static const _suggested = [
-    'Pizza', 'Austin', 'Coffee', 'Hidden Gems', 'Brunch',
-    'Vegan', 'Sushi', 'Bangkok street food',
+    'Pizza',
+    'Austin',
+    'Coffee',
+    'Hidden Gems',
+    'Brunch',
+    'Vegan',
+    'Sushi',
+    'Bangkok street food',
   ];
 
   final _controller = TextEditingController();
@@ -73,14 +79,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _error = null;
     });
     try {
-      final results =
-          await ref.read(discoveryRepositoryProvider).searchAll(query);
+      final results = await ref
+          .read(discoveryRepositoryProvider)
+          .searchAll(query);
       if (!mounted || _controller.text.trim() != query) return;
-      final total = ['restaurants', 'tasters', 'lists', 'cities', 'cuisines']
-          .fold<int>(0, (n, k) => n + ((results[k] as List?)?.length ?? 0));
-      unawaited(ref
-          .read(analyticsProvider)
-          .searchPerformed(query: query, resultCount: total));
+      final total = [
+        'restaurants',
+        'tasters',
+        'lists',
+        'cities',
+        'cuisines',
+      ].fold<int>(0, (n, k) => n + ((results[k] as List?)?.length ?? 0));
+      unawaited(
+        ref
+            .read(analyticsProvider)
+            .searchPerformed(query: query, resultCount: total),
+      );
       unawaited(_saveRecent(query));
       setState(() => _results = results);
     } catch (e) {
@@ -117,17 +131,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
         ],
       ),
-      body: Column(children: [
-        if (_loading) const LinearProgressIndicator(minHeight: 2),
-        Expanded(child: _body(theme)),
-      ]),
+      body: Column(
+        children: [
+          if (_loading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(child: _body(theme)),
+        ],
+      ),
     );
   }
 
   Widget _body(ThemeData theme) {
     if (_error != null) {
       return WbErrorState(
-          message: _error!, onRetry: () => _search(_controller.text));
+        message: _error!,
+        onRetry: () => _search(_controller.text),
+      );
     }
     if (_results == null) {
       // Idle state: recent + suggested searches.
@@ -135,37 +153,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         padding: const EdgeInsets.all(WbSpacing.md),
         children: [
           if (_recent.isNotEmpty) ...[
-            Text('Recent',
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Recent',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: WbSpacing.sm),
-            Wrap(spacing: WbSpacing.sm, runSpacing: WbSpacing.sm, children: [
-              for (final r in _recent)
-                ActionChip(
-                  avatar: const Icon(Icons.history, size: 16),
-                  label: Text(r),
-                  onPressed: () {
-                    _controller.text = r;
-                    unawaited(_search(r));
-                  },
-                ),
-            ]),
+            Wrap(
+              spacing: WbSpacing.sm,
+              runSpacing: WbSpacing.sm,
+              children: [
+                for (final r in _recent)
+                  ActionChip(
+                    avatar: const Icon(Icons.history, size: 16),
+                    label: Text(r),
+                    onPressed: () {
+                      _controller.text = r;
+                      unawaited(_search(r));
+                    },
+                  ),
+              ],
+            ),
             const SizedBox(height: WbSpacing.lg),
           ],
-          Text('Try searching',
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Try searching',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: WbSpacing.sm),
-          Wrap(spacing: WbSpacing.sm, runSpacing: WbSpacing.sm, children: [
-            for (final s in _suggested)
-              ActionChip(
-                label: Text(s),
-                onPressed: () {
-                  _controller.text = s;
-                  unawaited(_search(s));
-                },
-              ),
-          ]),
+          Wrap(
+            spacing: WbSpacing.sm,
+            runSpacing: WbSpacing.sm,
+            children: [
+              for (final s in _suggested)
+                ActionChip(
+                  label: Text(s),
+                  onPressed: () {
+                    _controller.text = s;
+                    unawaited(_search(s));
+                  },
+                ),
+            ],
+          ),
         ],
       );
     }
@@ -175,7 +207,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final lists = (_results!['lists'] as List?) ?? [];
     final cities = (_results!['cities'] as List?) ?? [];
     final cuisines = (_results!['cuisines'] as List?) ?? [];
-    final empty = restaurants.isEmpty &&
+    final empty =
+        restaurants.isEmpty &&
         tasters.isEmpty &&
         lists.isEmpty &&
         cities.isEmpty &&
@@ -190,82 +223,104 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     Widget header(String title) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-              WbSpacing.md, WbSpacing.md, WbSpacing.md, WbSpacing.xs),
-          child: Text(title,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
-        );
-
-    return ListView(children: [
-      if (restaurants.isNotEmpty) ...[
-        header('Restaurants'),
-        for (final r in restaurants.cast<Map<String, dynamic>>())
-          ListTile(
-            leading: const Icon(Icons.restaurant),
-            title: Text(r['name'] as String),
-            subtitle: Text(
-                '${r['city_name']} · ${r['rec_count']} recommendations'),
-            onTap: () => context.pushNamed(Routes.restaurant,
-                pathParameters: {'id': r['id'] as String}),
-          ),
-      ],
-      if (tasters.isNotEmpty) ...[
-        header('Tasters'),
-        for (final t in tasters.cast<Map<String, dynamic>>())
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: Text(t['display_name'] as String),
-            subtitle: Text('@${t['username']}'),
-            trailing: t['is_verified'] == true
-                ? const Icon(Icons.verified,
-                    size: 18, color: WbColors.voyageLight)
-                : null,
-            onTap: () => context.pushNamed(Routes.taster,
-                pathParameters: {'id': t['id'] as String}),
-          ),
-      ],
-      if (lists.isNotEmpty) ...[
-        header('Lists'),
-        for (final l in lists.cast<Map<String, dynamic>>())
-          ListTile(
-            leading: const Icon(Icons.playlist_play),
-            title: Text(l['title'] as String),
-            subtitle: Text('${l['restaurant_count']} places'),
-            onTap: () => context.pushNamed(Routes.list,
-                pathParameters: {'id': l['id'] as String}),
-          ),
-      ],
-      if (cities.isNotEmpty) ...[
-        header('Cities'),
-        for (final c in cities.cast<Map<String, dynamic>>())
-          ListTile(
-            leading: const Icon(Icons.location_city),
-            title: Text(c['name'] as String),
-            subtitle: Text(c['country_name'] as String? ?? ''),
-            onTap: () {
-              _controller.text = c['name'] as String;
-              unawaited(_search(c['name'] as String));
-            },
-          ),
-      ],
-      if (cuisines.isNotEmpty) ...[
-        header('Cuisines'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: WbSpacing.md),
-          child: Wrap(spacing: WbSpacing.sm, children: [
-            for (final c in cuisines.cast<Map<String, dynamic>>())
-              ActionChip(
-                label: Text('${c['emoji'] ?? ''} ${c['name']}'.trim()),
-                onPressed: () {
-                  _controller.text = c['name'] as String;
-                  unawaited(_search(c['name'] as String));
-                },
-              ),
-          ]),
+      padding: const EdgeInsets.fromLTRB(
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.xs,
+      ),
+      child: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+
+    return ListView(
+      children: [
+        if (restaurants.isNotEmpty) ...[
+          header('Restaurants'),
+          for (final r in restaurants.cast<Map<String, dynamic>>())
+            ListTile(
+              leading: const Icon(Icons.restaurant),
+              title: Text(r['name'] as String),
+              subtitle: Text(
+                '${r['city_name']} · ${r['rec_count']} recommendations',
+              ),
+              onTap: () => context.pushNamed(
+                Routes.restaurant,
+                pathParameters: {'id': r['id'] as String},
+              ),
+            ),
+        ],
+        if (tasters.isNotEmpty) ...[
+          header('Tasters'),
+          for (final t in tasters.cast<Map<String, dynamic>>())
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: Text(t['display_name'] as String),
+              subtitle: Text('@${t['username']}'),
+              trailing: t['is_verified'] == true
+                  ? const Icon(
+                      Icons.verified,
+                      size: 18,
+                      color: WbColors.voyageLight,
+                    )
+                  : null,
+              onTap: () => context.pushNamed(
+                Routes.taster,
+                pathParameters: {'id': t['id'] as String},
+              ),
+            ),
+        ],
+        if (lists.isNotEmpty) ...[
+          header('Lists'),
+          for (final l in lists.cast<Map<String, dynamic>>())
+            ListTile(
+              leading: const Icon(Icons.playlist_play),
+              title: Text(l['title'] as String),
+              subtitle: Text('${l['restaurant_count']} places'),
+              onTap: () => context.pushNamed(
+                Routes.list,
+                pathParameters: {'id': l['id'] as String},
+              ),
+            ),
+        ],
+        if (cities.isNotEmpty) ...[
+          header('Cities'),
+          for (final c in cities.cast<Map<String, dynamic>>())
+            ListTile(
+              leading: const Icon(Icons.location_city),
+              title: Text(c['name'] as String),
+              subtitle: Text(c['country_name'] as String? ?? ''),
+              onTap: () {
+                _controller.text = c['name'] as String;
+                unawaited(_search(c['name'] as String));
+              },
+            ),
+        ],
+        if (cuisines.isNotEmpty) ...[
+          header('Cuisines'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: WbSpacing.md),
+            child: Wrap(
+              spacing: WbSpacing.sm,
+              children: [
+                for (final c in cuisines.cast<Map<String, dynamic>>())
+                  ActionChip(
+                    label: Text('${c['emoji'] ?? ''} ${c['name']}'.trim()),
+                    onPressed: () {
+                      _controller.text = c['name'] as String;
+                      unawaited(_search(c['name'] as String));
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: WbSpacing.xl),
       ],
-      const SizedBox(height: WbSpacing.xl),
-    ]);
+    );
   }
 }

@@ -25,8 +25,9 @@ class LocationService {
     if (status != LocationStatus.granted) return null;
     try {
       return await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
     } catch (_) {
       return Geolocator.getLastKnownPosition();

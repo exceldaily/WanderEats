@@ -13,8 +13,10 @@ class TasterRepository {
 
   Future<Map<String, dynamic>> stats(String userId) async {
     try {
-      return await _schema
-          .rpc<Map<String, dynamic>>('taster_stats', params: {'uid': userId});
+      return await _schema.rpc<Map<String, dynamic>>(
+        'taster_stats',
+        params: {'uid': userId},
+      );
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
     }
@@ -25,16 +27,15 @@ class TasterRepository {
         .from('follows')
         .select('followee_id')
         .eq('follower_id', myId);
-    return rows
-        .map((r) => r['followee_id'] as String)
-        .toSet();
+    return rows.map((r) => r['followee_id'] as String).toSet();
   }
 
   Future<void> follow(String myId, String tasterId) async {
     try {
-      await _schema
-          .from('follows')
-          .insert({'follower_id': myId, 'followee_id': tasterId});
+      await _schema.from('follows').insert({
+        'follower_id': myId,
+        'followee_id': tasterId,
+      });
     } on PostgrestException catch (e) {
       if (e.code != '23505') throw ServerException(cause: e);
     }
@@ -51,9 +52,14 @@ class TasterRepository {
   /// A Taster's personal food map (recommended / visited / saved places).
   Future<List<TasterPlace>> places(String userId) async {
     try {
-      final rows = await _schema
-          .rpc<List<dynamic>>('taster_places', params: {'uid': userId});
-      return rows.cast<Map<String, dynamic>>().map(TasterPlace.fromJson).toList();
+      final rows = await _schema.rpc<List<dynamic>>(
+        'taster_places',
+        params: {'uid': userId},
+      );
+      return rows
+          .cast<Map<String, dynamic>>()
+          .map(TasterPlace.fromJson)
+          .toList();
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
     }
@@ -75,11 +81,11 @@ class TasterPlace {
   final bool saved;
 
   factory TasterPlace.fromJson(Map<String, dynamic> json) => TasterPlace(
-        marker: RestaurantMarker.fromJson(json),
-        recommended: json['recommended'] as bool? ?? false,
-        visited: json['visited'] as bool? ?? false,
-        saved: json['saved'] as bool? ?? false,
-      );
+    marker: RestaurantMarker.fromJson(json),
+    recommended: json['recommended'] as bool? ?? false,
+    visited: json['visited'] as bool? ?? false,
+    saved: json['saved'] as bool? ?? false,
+  );
 }
 
 final tasterRepositoryProvider = Provider<TasterRepository>((ref) {

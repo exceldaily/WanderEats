@@ -16,9 +16,11 @@ import '../../domain/recommendation.dart';
 
 final _feedbackProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, recId) {
-  final myId = ref.watch(sessionProvider)?.user.id;
-  return ref.watch(recommendationRepositoryProvider).feedbackFor(recId, myId);
-});
+      final myId = ref.watch(sessionProvider)?.user.id;
+      return ref
+          .watch(recommendationRepositoryProvider)
+          .feedbackFor(recId, myId);
+    });
 
 /// A single recommendation: author, quote, what to order, photos, and the
 /// "was this accurate?" feedback flow for people who visited because of it.
@@ -36,8 +38,8 @@ class RecommendationCard extends ConsumerWidget {
     final feedback = ref.watch(_feedbackProvider(recommendation.id)).value;
     final counts = (feedback?['counts'] as Map<String, dynamic>?) ?? {};
     final mine = feedback?['mine'] as String?;
-    final positive = ((counts['exact'] as int?) ?? 0) +
-        ((counts['great'] as int?) ?? 0);
+    final positive =
+        ((counts['exact'] as int?) ?? 0) + ((counts['great'] as int?) ?? 0);
 
     return Card(
       child: Padding(
@@ -46,58 +48,78 @@ class RecommendationCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => context.pushNamed(Routes.taster,
-                  pathParameters: {'id': recommendation.userId}),
-              child: Row(children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: author?['avatar_url'] == null
-                      ? null
-                      : CachedNetworkImageProvider(
-                          author!['avatar_url'] as String),
-                  child: author?['avatar_url'] == null
-                      ? Text(((author?['display_name'] as String?) ?? '?')
-                          .characters
-                          .first)
-                      : null,
-                ),
-                const SizedBox(width: WbSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Flexible(
-                          child: Text(
-                            (author?['display_name'] as String?) ?? 'Taster',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
+              onTap: () => context.pushNamed(
+                Routes.taster,
+                pathParameters: {'id': recommendation.userId},
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: author?['avatar_url'] == null
+                        ? null
+                        : CachedNetworkImageProvider(
+                            author!['avatar_url'] as String,
+                          ),
+                    child: author?['avatar_url'] == null
+                        ? Text(
+                            ((author?['display_name'] as String?) ?? '?')
+                                .characters
+                                .first,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: WbSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                (author?['display_name'] as String?) ??
+                                    'Taster',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (author?['is_verified'] == true)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Icon(
+                                  Icons.verified,
+                                  size: 16,
+                                  color: WbColors.voyageLight,
+                                ),
+                              ),
+                          ],
+                        ),
+                        Text(
+                          '@${author?['username'] ?? ''} · ${DateFormat.yMMMd().format(recommendation.createdAt)}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        if (author?['is_verified'] == true)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4),
-                            child: Icon(Icons.verified,
-                                size: 16, color: WbColors.voyageLight),
-                          ),
-                      ]),
-                      Text(
-                        '@${author?['username'] ?? ''} · ${DateFormat.yMMMd().format(recommendation.createdAt)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
+                  if (positive > 0)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(
+                        Icons.verified_user_outlined,
+                        size: 14,
                       ),
-                    ],
-                  ),
-                ),
-                if (positive > 0)
-                  Chip(
-                    visualDensity: VisualDensity.compact,
-                    avatar: const Icon(Icons.verified_user_outlined, size: 14),
-                    label: Text('$positive found this accurate',
-                        style: theme.textTheme.labelSmall),
-                  ),
-              ]),
+                      label: Text(
+                        '$positive found this accurate',
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: WbSpacing.sm),
             Text(recommendation.body, style: theme.textTheme.bodyMedium),
@@ -115,8 +137,10 @@ class RecommendationCard extends ConsumerWidget {
                     const Icon(Icons.restaurant_menu, size: 16),
                     const SizedBox(width: WbSpacing.sm),
                     Expanded(
-                      child: Text('Order: ${recommendation.whatToOrder}',
-                          style: theme.textTheme.bodySmall),
+                      child: Text(
+                        'Order: ${recommendation.whatToOrder}',
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ),
                   ],
                 ),
@@ -134,8 +158,8 @@ class RecommendationCard extends ConsumerWidget {
                   itemBuilder: (context, i) => ClipRRect(
                     borderRadius: BorderRadius.circular(WbRadius.chip),
                     child: CachedNetworkImage(
-                      imageUrl: recommendation.photos[i]['storage_path']
-                          as String,
+                      imageUrl:
+                          recommendation.photos[i]['storage_path'] as String,
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
@@ -150,12 +174,14 @@ class RecommendationCard extends ConsumerWidget {
                   ? Text(
                       'You rated this: ${RecFeedbackRating.values.firstWhere((r) => r.value == mine).label}',
                       style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     )
                   : TextButton.icon(
                       style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: () => _rate(context, ref),
                       icon: const Icon(Icons.fact_check_outlined, size: 18),
                       label: const Text('Visited because of this? Rate it'),
@@ -176,8 +202,10 @@ class RecommendationCard extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(WbSpacing.md),
-              child: Text('How was the recommendation?',
-                  style: Theme.of(context).textTheme.titleMedium),
+              child: Text(
+                'How was the recommendation?',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
             for (final r in RecFeedbackRating.values)
               ListTile(
@@ -198,18 +226,26 @@ class RecommendationCard extends ConsumerWidget {
     final session = ref.read(sessionProvider);
     if (session == null) return;
     try {
-      await ref.read(recommendationRepositoryProvider).submitFeedback(
+      await ref
+          .read(recommendationRepositoryProvider)
+          .submitFeedback(
             userId: session.user.id,
             recommendationId: recommendation.id,
             rating: rating,
           );
-      unawaited(ref.read(analyticsProvider).recommendationFeedbackSubmitted(
-          recommendationId: recommendation.id));
+      unawaited(
+        ref
+            .read(analyticsProvider)
+            .recommendationFeedbackSubmitted(
+              recommendationId: recommendation.id,
+            ),
+      );
       ref.invalidate(_feedbackProvider(recommendation.id));
     } on AppException catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
   }

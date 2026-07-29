@@ -45,7 +45,9 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
       _error = null;
     });
     try {
-      final list = await ref.read(listRepositoryProvider).create(
+      final list = await ref
+          .read(listRepositoryProvider)
+          .create(
             ownerId: session.user.id,
             title: _title.text.trim(),
             description: _description.text.trim(),
@@ -54,8 +56,10 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
           );
       unawaited(ref.read(analyticsProvider).listCreated(listId: list.id));
       if (mounted) {
-        context.pushReplacementNamed(Routes.list,
-            pathParameters: {'id': list.id});
+        context.pushReplacementNamed(
+          Routes.list,
+          pathParameters: {'id': list.id},
+        );
       }
     } on AppException catch (e) {
       setState(() => _error = e.message);
@@ -98,23 +102,23 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(
-                    value: 'public',
-                    label: Text('Public'),
-                    icon: Icon(Icons.public)),
+                  value: 'public',
+                  label: Text('Public'),
+                  icon: Icon(Icons.public),
+                ),
                 ButtonSegment(
-                    value: 'private',
-                    label: Text('Just me'),
-                    icon: Icon(Icons.lock_outline)),
+                  value: 'private',
+                  label: Text('Just me'),
+                  icon: Icon(Icons.lock_outline),
+                ),
               ],
               selected: {_visibility},
-              onSelectionChanged: (s) =>
-                  setState(() => _visibility = s.first),
+              onSelectionChanged: (s) => setState(() => _visibility = s.first),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Collaborative'),
-              subtitle:
-                  const Text('Invite friends to add places to this list'),
+              subtitle: const Text('Invite friends to add places to this list'),
               value: _collaborative,
               onChanged: (v) => setState(() => _collaborative = v),
             ),
@@ -127,7 +131,8 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Text('Create list'),
             ),
           ],

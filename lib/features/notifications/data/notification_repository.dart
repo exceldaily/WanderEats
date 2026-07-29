@@ -52,12 +52,13 @@ class NotificationRepository {
 
   final SupabaseQuerySchema _schema;
 
-  Future<List<AppNotification>> list(String userId,
-      {int limit = 50}) async {
+  Future<List<AppNotification>> list(String userId, {int limit = 50}) async {
     try {
       final rows = await _schema
           .from('notifications')
-          .select('*, profiles!notifications_actor_id_fkey(username, display_name, avatar_url)')
+          .select(
+            '*, profiles!notifications_actor_id_fkey(username, display_name, avatar_url)',
+          )
           .eq('user_id', userId)
           .order('created_at', ascending: false)
           .limit(limit);
@@ -70,7 +71,8 @@ class NotificationRepository {
   Future<void> markRead(String id) async {
     await _schema
         .from('notifications')
-        .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
+        .update({'read_at': DateTime.now().toIso8601String()})
+        .eq('id', id);
   }
 
   Future<void> markAllRead(String userId) async {
@@ -84,7 +86,8 @@ class NotificationRepository {
   /// Resolve where a notification should deep-link to.
   /// Returns (routeName, pathParams) or null.
   Future<(String, Map<String, String>)?> resolveTarget(
-      AppNotification n) async {
+    AppNotification n,
+  ) async {
     switch (n.type) {
       case 'follow':
         return n.actorId == null ? null : ('taster', {'id': n.actorId!});

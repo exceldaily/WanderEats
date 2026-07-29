@@ -11,12 +11,13 @@ import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../data/notification_repository.dart';
 
-final notificationsProvider =
-    FutureProvider.autoDispose<List<AppNotification>>((ref) async {
-  final session = ref.watch(sessionProvider);
-  if (session == null) return [];
-  return ref.watch(notificationRepositoryProvider).list(session.user.id);
-});
+final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
+  (ref) async {
+    final session = ref.watch(sessionProvider);
+    if (session == null) return [];
+    return ref.watch(notificationRepositoryProvider).list(session.user.id);
+  },
+);
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -38,15 +39,16 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   IconData _icon(String type) => switch (type) {
-        'follow' => Icons.person_add_alt,
-        'rec_feedback' => Icons.fact_check_outlined,
-        'comment' => Icons.chat_bubble_outline,
-        'like' => Icons.favorite_outline,
-        'list_invite' || 'list_update' || 'saved_list_update' =>
-          Icons.playlist_add_check,
-        'badge' => Icons.emoji_events_outlined,
-        _ => Icons.notifications_none,
-      };
+    'follow' => Icons.person_add_alt,
+    'rec_feedback' => Icons.fact_check_outlined,
+    'comment' => Icons.chat_bubble_outline,
+    'like' => Icons.favorite_outline,
+    'list_invite' ||
+    'list_update' ||
+    'saved_list_update' => Icons.playlist_add_check,
+    'badge' => Icons.emoji_events_outlined,
+    _ => Icons.notifications_none,
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,18 +74,21 @@ class NotificationsScreen extends ConsumerWidget {
           ? const WbEmptyState(
               icon: Icons.notifications_none,
               title: 'Sign in to see activity',
-              message: 'Follows, feedback and list updates land here.')
+              message: 'Follows, feedback and list updates land here.',
+            )
           : items.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => WbErrorState(
-                  message: e.toString(),
-                  onRetry: () => ref.invalidate(notificationsProvider)),
+                message: e.toString(),
+                onRetry: () => ref.invalidate(notificationsProvider),
+              ),
               data: (notifications) => notifications.isEmpty
                   ? const WbEmptyState(
                       icon: Icons.notifications_none,
                       title: 'No activity yet',
                       message:
-                          'Follow Tasters and publish recommendations to get things moving.')
+                          'Follow Tasters and publish recommendations to get things moving.',
+                    )
                   : RefreshIndicator(
                       onRefresh: () async =>
                           ref.invalidate(notificationsProvider),
@@ -93,36 +98,49 @@ class NotificationsScreen extends ConsumerWidget {
                           final n = notifications[i];
                           return ListTile(
                             tileColor: n.unread
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.05)
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.05)
                                 : null,
                             leading: n.actorAvatarUrl != null
                                 ? CircleAvatar(
                                     backgroundImage: CachedNetworkImageProvider(
-                                        n.actorAvatarUrl!))
+                                      n.actorAvatarUrl!,
+                                    ),
+                                  )
                                 : CircleAvatar(child: Icon(_icon(n.type))),
-                            title: Text(_label(n),
-                                style: TextStyle(
-                                    fontWeight: n.unread
-                                        ? FontWeight.w600
-                                        : FontWeight.normal)),
+                            title: Text(
+                              _label(n),
+                              style: TextStyle(
+                                fontWeight: n.unread
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
                             subtitle: Text(
-                                DateFormat.yMMMd().add_jm().format(n.createdAt)),
+                              DateFormat.yMMMd().add_jm().format(n.createdAt),
+                            ),
                             trailing: n.unread
-                                ? const Icon(Icons.circle,
-                                    size: 10, color: WbColors.ember)
+                                ? const Icon(
+                                    Icons.circle,
+                                    size: 10,
+                                    color: WbColors.ember,
+                                  )
                                 : null,
                             onTap: () async {
-                              final repo =
-                                  ref.read(notificationRepositoryProvider);
+                              final repo = ref.read(
+                                notificationRepositoryProvider,
+                              );
                               await repo.markRead(n.id);
                               ref.invalidate(notificationsProvider);
                               final target = await repo.resolveTarget(n);
                               if (target != null && context.mounted) {
-                                unawaited(context.pushNamed(target.$1,
-                                    pathParameters: target.$2));
+                                unawaited(
+                                  context.pushNamed(
+                                    target.$1,
+                                    pathParameters: target.$2,
+                                  ),
+                                );
                               }
                             },
                           );

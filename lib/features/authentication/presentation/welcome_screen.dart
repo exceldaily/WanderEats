@@ -36,8 +36,9 @@ class WelcomeScreen extends ConsumerWidget {
               Text(
                 'Follow people with great taste.\nDiscover unforgettable places.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const Spacer(),
               FilledButton.icon(
@@ -46,8 +47,9 @@ class WelcomeScreen extends ConsumerWidget {
                     await ref.read(authRepositoryProvider).signInWithGoogle();
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(e.toString())));
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(e.toString())));
                     }
                   }
                 },

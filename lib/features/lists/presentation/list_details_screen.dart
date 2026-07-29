@@ -19,21 +19,24 @@ import '../data/list_repository.dart';
 import '../domain/food_list.dart';
 
 final listProvider = FutureProvider.autoDispose.family<FoodList, String>(
-    (ref, id) => ref.watch(listRepositoryProvider).fetchList(id));
+  (ref, id) => ref.watch(listRepositoryProvider).fetchList(id),
+);
 
 final listPlacesProvider = FutureProvider.autoDispose
     .family<List<ListPlace>, String>(
-        (ref, id) => ref.watch(listRepositoryProvider).places(id));
+      (ref, id) => ref.watch(listRepositoryProvider).places(id),
+    );
 
 final listMetaProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, id) {
-  final myId = ref.watch(sessionProvider)?.user.id;
-  return ref.watch(listRepositoryProvider).listMeta(id, myId);
-});
+      final myId = ref.watch(sessionProvider)?.user.id;
+      return ref.watch(listRepositoryProvider).listMeta(id, myId);
+    });
 
 final listCommentsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>(
-        (ref, id) => ref.watch(listRepositoryProvider).comments(id));
+      (ref, id) => ref.watch(listRepositoryProvider).comments(id),
+    );
 
 /// A list like a playlist: cover, meta, ordered places, map view, comments.
 class ListDetailsScreen extends ConsumerStatefulWidget {
@@ -65,8 +68,9 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
       body: list.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => WbErrorState(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(listProvider(widget.listId))),
+          message: e.toString(),
+          onRetry: () => ref.invalidate(listProvider(widget.listId)),
+        ),
         data: (l) {
           final isOwner = myId == l.ownerId;
           final places = ref.watch(listPlacesProvider(widget.listId));
@@ -81,10 +85,16 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                     tooltip: 'Share',
                     icon: const Icon(Icons.share_outlined),
                     onPressed: () {
-                      unawaited(ref.read(analyticsProvider).shareInitiated(
-                          contentType: 'list', id: l.id));
-                      unawaited(SharePlus.instance.share(ShareParams(
-                          text: '"${l.title}" on WanderBites')));
+                      unawaited(
+                        ref
+                            .read(analyticsProvider)
+                            .shareInitiated(contentType: 'list', id: l.id),
+                      );
+                      unawaited(
+                        SharePlus.instance.share(
+                          ShareParams(text: '"${l.title}" on WanderBites'),
+                        ),
+                      );
                     },
                   ),
                   IconButton(
@@ -94,11 +104,15 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  title: Text(l.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  title: Text(
+                    l.title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   background: l.coverUrl != null
                       ? CachedNetworkImage(
-                          imageUrl: l.coverUrl!, fit: BoxFit.cover)
+                          imageUrl: l.coverUrl!,
+                          fit: BoxFit.cover,
+                        )
                       : Container(color: WbColors.voyage),
                 ),
               ),
@@ -109,8 +123,7 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (l.description != null)
-                        Text(l.description!,
-                            style: theme.textTheme.bodyMedium),
+                        Text(l.description!, style: theme.textTheme.bodyMedium),
                       const SizedBox(height: WbSpacing.sm),
                       Text(
                         [
@@ -122,90 +135,111 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                           if (l.visibility == 'private') 'private',
                         ].join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant),
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: WbSpacing.md),
-                      Row(children: [
-                        if (!isOwner)
+                      Row(
+                        children: [
+                          if (!isOwner)
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: myId == null
+                                    ? null
+                                    : () async {
+                                        final follows =
+                                            meta?['i_follow'] == true;
+                                        final repo = ref.read(
+                                          listRepositoryProvider,
+                                        );
+                                        if (follows) {
+                                          await repo.unfollowList(myId, l.id);
+                                        } else {
+                                          await repo.followList(myId, l.id);
+                                          unawaited(
+                                            ref
+                                                .read(analyticsProvider)
+                                                .listFollowed(listId: l.id),
+                                          );
+                                        }
+                                        ref.invalidate(
+                                          listMetaProvider(widget.listId),
+                                        );
+                                      },
+                                icon: Icon(
+                                  meta?['i_follow'] == true
+                                      ? Icons.check
+                                      : Icons.add,
+                                ),
+                                label: Text(
+                                  meta?['i_follow'] == true
+                                      ? 'Following'
+                                      : 'Follow list',
+                                ),
+                              ),
+                            ),
+                          if (!isOwner) const SizedBox(width: WbSpacing.sm),
                           Expanded(
-                            child: FilledButton.tonalIcon(
+                            child: OutlinedButton.icon(
                               onPressed: myId == null
                                   ? null
                                   : () async {
-                                      final follows =
-                                          meta?['i_follow'] == true;
-                                      final repo =
-                                          ref.read(listRepositoryProvider);
-                                      if (follows) {
-                                        await repo.unfollowList(myId, l.id);
-                                      } else {
-                                        await repo.followList(myId, l.id);
-                                        unawaited(ref
-                                            .read(analyticsProvider)
-                                            .listFollowed(listId: l.id));
-                                      }
+                                      await ref
+                                          .read(listRepositoryProvider)
+                                          .toggleLike(
+                                            myId,
+                                            l.id,
+                                            meta?['i_like'] != true,
+                                          );
                                       ref.invalidate(
-                                          listMetaProvider(widget.listId));
+                                        listMetaProvider(widget.listId),
+                                      );
                                     },
-                              icon: Icon(meta?['i_follow'] == true
-                                  ? Icons.check
-                                  : Icons.add),
-                              label: Text(meta?['i_follow'] == true
-                                  ? 'Following'
-                                  : 'Follow list'),
+                              icon: Icon(
+                                meta?['i_like'] == true
+                                    ? Icons.favorite
+                                    : Icons.favorite_outline,
+                              ),
+                              label: Text('${meta?['likes'] ?? 0}'),
                             ),
                           ),
-                        if (!isOwner) const SizedBox(width: WbSpacing.sm),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: myId == null
-                                ? null
-                                : () async {
+                          if (isOwner || l.isCollaborative) ...[
+                            const SizedBox(width: WbSpacing.sm),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  final picked = await showRestaurantPicker(
+                                    context,
+                                  );
+                                  if (picked == null || myId == null) return;
+                                  try {
                                     await ref
                                         .read(listRepositoryProvider)
-                                        .toggleLike(myId, l.id,
-                                            meta?['i_like'] != true);
+                                        .addRestaurant(
+                                          listId: l.id,
+                                          restaurantId: picked.id,
+                                          addedBy: myId,
+                                        );
                                     ref.invalidate(
-                                        listMetaProvider(widget.listId));
-                                  },
-                            icon: Icon(meta?['i_like'] == true
-                                ? Icons.favorite
-                                : Icons.favorite_outline),
-                            label: Text('${meta?['likes'] ?? 0}'),
-                          ),
-                        ),
-                        if (isOwner || l.isCollaborative) ...[
-                          const SizedBox(width: WbSpacing.sm),
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () async {
-                                final picked =
-                                    await showRestaurantPicker(context);
-                                if (picked == null || myId == null) return;
-                                try {
-                                  await ref
-                                      .read(listRepositoryProvider)
-                                      .addRestaurant(
-                                        listId: l.id,
-                                        restaurantId: picked.id,
-                                        addedBy: myId,
+                                      listPlacesProvider(widget.listId),
+                                    );
+                                  } on AppException catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text(e.message)),
                                       );
-                                  ref.invalidate(
-                                      listPlacesProvider(widget.listId));
-                                } on AppException catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                            content: Text(e.message)));
+                                    }
                                   }
-                                }
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add place'),
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add place'),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ]),
+                      ),
                     ],
                   ),
                 ),
@@ -213,31 +247,37 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
               // Places: map or ordered list
               places.when(
                 loading: () => const SliverToBoxAdapter(
-                    child: Padding(
-                        padding: EdgeInsets.all(WbSpacing.md),
-                        child: WbSkeleton(height: 160))),
+                  child: Padding(
+                    padding: EdgeInsets.all(WbSpacing.md),
+                    child: WbSkeleton(height: 160),
+                  ),
+                ),
                 error: (e, _) => SliverToBoxAdapter(
-                    child: Padding(
-                        padding: const EdgeInsets.all(WbSpacing.md),
-                        child: Text('Could not load places: $e'))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(WbSpacing.md),
+                    child: Text('Could not load places: $e'),
+                  ),
+                ),
                 data: (items) => _mapView
                     ? SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: WbSpacing.md),
+                            horizontal: WbSpacing.md,
+                          ),
                           child: _ListMap(items: items),
                         ),
                       )
                     : items.isEmpty
-                        ? const SliverToBoxAdapter(
-                            child: WbEmptyState(
-                                icon: Icons.playlist_add,
-                                title: 'Nothing here yet',
-                                message: 'Add the first place.'),
-                          )
-                        : isOwner
-                            ? _reorderableEntries(items)
-                            : _staticEntries(items),
+                    ? const SliverToBoxAdapter(
+                        child: WbEmptyState(
+                          icon: Icons.playlist_add,
+                          title: 'Nothing here yet',
+                          message: 'Add the first place.',
+                        ),
+                      )
+                    : isOwner
+                    ? _reorderableEntries(items)
+                    : _staticEntries(items),
               ),
               // Comments
               SliverToBoxAdapter(
@@ -247,45 +287,55 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(),
-                      Text('Comments',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        'Comments',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: WbSpacing.sm),
                       if (myId != null)
-                        Row(children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _comment,
-                              maxLength: 500,
-                              decoration: const InputDecoration(
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _comment,
+                                maxLength: 500,
+                                decoration: const InputDecoration(
                                   hintText: 'Add a comment',
-                                  counterText: ''),
+                                  counterText: '',
+                                ),
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: () async {
-                              final body = _comment.text.trim();
-                              if (body.isEmpty) return;
-                              await ref
-                                  .read(listRepositoryProvider)
-                                  .addComment(myId, l.id, body);
-                              _comment.clear();
-                              ref.invalidate(
-                                  listCommentsProvider(widget.listId));
-                            },
-                          ),
-                        ]),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed: () async {
+                                final body = _comment.text.trim();
+                                if (body.isEmpty) return;
+                                await ref
+                                    .read(listRepositoryProvider)
+                                    .addComment(myId, l.id, body);
+                                _comment.clear();
+                                ref.invalidate(
+                                  listCommentsProvider(widget.listId),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ...?ref
                           .watch(listCommentsProvider(widget.listId))
                           .value
-                          ?.map((c) => ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.person_outline),
-                                title: Text(
-                                    '@${(c['profiles'] as Map?)?['username'] ?? ''}'),
-                                subtitle: Text(c['body'] as String),
-                              )),
+                          ?.map(
+                            (c) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.person_outline),
+                              title: Text(
+                                '@${(c['profiles'] as Map?)?['username'] ?? ''}',
+                              ),
+                              subtitle: Text(c['body'] as String),
+                            ),
+                          ),
                     ],
                   ),
                 ),
@@ -359,10 +409,13 @@ class _EntryTile extends StatelessWidget {
           ? IconButton(
               tooltip: 'Remove',
               icon: const Icon(Icons.remove_circle_outline),
-              onPressed: onRemove)
+              onPressed: onRemove,
+            )
           : const Icon(Icons.chevron_right),
-      onTap: () => context.pushNamed(Routes.restaurant,
-          pathParameters: {'id': place.marker.id}),
+      onTap: () => context.pushNamed(
+        Routes.restaurant,
+        pathParameters: {'id': place.marker.id},
+      ),
     );
   }
 }
@@ -382,9 +435,12 @@ class _ListMap extends StatelessWidget {
           borderRadius: BorderRadius.circular(WbRadius.card),
         ),
         child: Center(
-            child: Text(items.isEmpty
+          child: Text(
+            items.isEmpty
                 ? 'No places yet'
-                : '${items.length} places (map needs an API key)')),
+                : '${items.length} places (map needs an API key)',
+          ),
+        ),
       );
     }
     return SizedBox(
@@ -404,7 +460,8 @@ class _ListMap extends StatelessWidget {
                 markerId: MarkerId(p.entryId),
                 position: LatLng(p.marker.lat, p.marker.lng),
                 infoWindow: InfoWindow(
-                    title: '${p.position}. ${p.marker.name}'),
+                  title: '${p.position}. ${p.marker.name}',
+                ),
               ),
           },
         ),

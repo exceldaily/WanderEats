@@ -25,16 +25,18 @@ final isSignedInProvider = Provider<bool>((ref) {
 
 /// The current user's WanderBites profile. Null when signed out OR when the
 /// (shared-pool) account has not completed WanderBites onboarding yet.
-final myProfileProvider =
-    AsyncNotifierProvider<MyProfileController, Profile?>(MyProfileController.new);
+final myProfileProvider = AsyncNotifierProvider<MyProfileController, Profile?>(
+  MyProfileController.new,
+);
 
 class MyProfileController extends AsyncNotifier<Profile?> {
   @override
   Future<Profile?> build() async {
     final session = ref.watch(sessionProvider);
     if (session == null) return null;
-    final profile =
-        await ref.read(profileRepositoryProvider).fetchProfile(session.user.id);
+    final profile = await ref
+        .read(profileRepositoryProvider)
+        .fetchProfile(session.user.id);
     // Restored sessions also need their device token kept current.
     if (profile != null) {
       unawaited(ref.read(pushServiceProvider).enableForCurrentUser());
@@ -52,7 +54,9 @@ class MyProfileController extends AsyncNotifier<Profile?> {
   }) async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
-    final profile = await ref.read(profileRepositoryProvider).createProfile(
+    final profile = await ref
+        .read(profileRepositoryProvider)
+        .createProfile(
           userId: session.user.id,
           username: username,
           displayName: displayName,
@@ -68,8 +72,9 @@ class MyProfileController extends AsyncNotifier<Profile?> {
   Future<void> updateProfile(Map<String, dynamic> patch) async {
     final current = state.value;
     if (current == null) return;
-    final updated =
-        await ref.read(profileRepositoryProvider).updateProfile(current.id, patch);
+    final updated = await ref
+        .read(profileRepositoryProvider)
+        .updateProfile(current.id, patch);
     state = AsyncData(updated);
   }
 

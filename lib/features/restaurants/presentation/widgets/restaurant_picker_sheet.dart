@@ -46,8 +46,9 @@ class _PickerSheetState extends ConsumerState<_PickerSheet> {
       }
       setState(() => _loading = true);
       try {
-        final results =
-            await ref.read(restaurantRepositoryProvider).searchByName(q);
+        final results = await ref
+            .read(restaurantRepositoryProvider)
+            .searchByName(q);
         if (mounted && _controller.text.trim() == q) {
           setState(() => _results = results);
         }
@@ -60,45 +61,50 @@ class _PickerSheetState extends ConsumerState<_PickerSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.7,
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.all(WbSpacing.md),
-            child: TextField(
-              controller: _controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search restaurants',
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(WbSpacing.md),
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search restaurants',
+                ),
+                onChanged: _onChanged,
               ),
-              onChanged: _onChanged,
             ),
-          ),
-          if (_loading) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            child: _results.isEmpty
-                ? Center(
-                    child: Text(
-                      _controller.text.trim().length < 2
-                          ? 'Type to search'
-                          : 'No matches',
-                      style: Theme.of(context).textTheme.bodyMedium,
+            if (_loading) const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              child: _results.isEmpty
+                  ? Center(
+                      child: Text(
+                        _controller.text.trim().length < 2
+                            ? 'Type to search'
+                            : 'No matches',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, i) => ListTile(
+                        leading: const Icon(Icons.restaurant),
+                        title: Text(_results[i].name),
+                        subtitle: Text(
+                          '${_results[i].recCount} recommendations',
+                        ),
+                        onTap: () => Navigator.pop(context, _results[i]),
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: _results.length,
-                    itemBuilder: (context, i) => ListTile(
-                      leading: const Icon(Icons.restaurant),
-                      title: Text(_results[i].name),
-                      subtitle: Text('${_results[i].recCount} recommendations'),
-                      onTap: () => Navigator.pop(context, _results[i]),
-                    ),
-                  ),
-          ),
-        ]),
+            ),
+          ],
+        ),
       ),
     );
   }

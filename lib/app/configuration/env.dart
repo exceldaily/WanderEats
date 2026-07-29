@@ -6,18 +6,23 @@
 /// must NEVER appear in this app.
 abstract final class Env {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const supabasePublishableKey =
-      String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+  static const supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+  );
 
   /// Every WanderBites table lives in this schema inside the shared project.
-  static const supabaseSchema =
-      String.fromEnvironment('SUPABASE_SCHEMA', defaultValue: 'wanderbites');
+  static const supabaseSchema = String.fromEnvironment(
+    'SUPABASE_SCHEMA',
+    defaultValue: 'wanderbites',
+  );
 
   /// Google Maps SDK key. The map renders a fallback panel until provided.
   static const googleMapsApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
 
-  static const environment =
-      String.fromEnvironment('APP_ENV', defaultValue: 'development');
+  static const environment = String.fromEnvironment(
+    'APP_ENV',
+    defaultValue: 'development',
+  );
 
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../restaurants/data/places_repository.dart';
 import '../../restaurants/data/restaurant_repository.dart';
 import '../../restaurants/domain/restaurant.dart';
 
@@ -32,6 +33,7 @@ class MapViewState {
     this.filters = const MapFilters(),
     this.selectedId,
     this.boundsDirty = false,
+    this.importing = false,
   });
 
   final List<RestaurantMarker> markers;
@@ -45,6 +47,9 @@ class MapViewState {
   /// The camera moved since the last query: show "search this area".
   final bool boundsDirty;
 
+  /// Pulling a not-yet-covered area from the external provider.
+  final bool importing;
+
   RestaurantMarker? get selected => selectedId == null
       ? null
       : markers.where((m) => m.id == selectedId).firstOrNull;
@@ -56,19 +61,21 @@ class MapViewState {
     MapFilters? filters,
     String? Function()? selectedId,
     bool? boundsDirty,
-  }) =>
-      MapViewState(
-        markers: markers ?? this.markers,
-        loading: loading ?? this.loading,
-        offline: offline ?? this.offline,
-        filters: filters ?? this.filters,
-        selectedId: selectedId != null ? selectedId() : this.selectedId,
-        boundsDirty: boundsDirty ?? this.boundsDirty,
-      );
+    bool? importing,
+  }) => MapViewState(
+    markers: markers ?? this.markers,
+    loading: loading ?? this.loading,
+    offline: offline ?? this.offline,
+    filters: filters ?? this.filters,
+    selectedId: selectedId != null ? selectedId() : this.selectedId,
+    boundsDirty: boundsDirty ?? this.boundsDirty,
+    importing: importing ?? this.importing,
+  );
 }
 
-final mapControllerProvider =
-    NotifierProvider<MapViewController, MapViewState>(MapViewController.new);
+final mapControllerProvider = NotifierProvider<MapViewController, MapViewState>(
+  MapViewController.new,
+);
 
 class MapViewController extends Notifier<MapViewState> {
   Timer? _debounce;
@@ -105,24 +112,58 @@ class MapViewController extends Notifier<MapViewState> {
     _debounce?.cancel();
     state = state.copyWith(loading: true);
     try {
-      final markers = await ref.read(restaurantRepositoryProvider).inBounds(
+      final repo = ref.read(restaurantRepositoryProvider);
+      var markers = await repo.inBounds(
+        minLng: bounds.southwest.longitude,
+        minLat: bounds.southwest.latitude,
+        maxLng: bounds.northeast.longitude,
+        maxLat: bounds.northeast.latitude,
+      );
+
+      // Anywhere we have little or no data, pull the area from the external
+      // provider once and re-read. This is what makes the map work outside the
+      // curated cities; the backend no-ops on tiles it already fetched, so
+      // panning over covered ground costs nothing.
+      final places = ref.read(placesRepositoryProvider);
+      final spanLat = (bounds.northeast.latitude - bounds.southwest.latitude)
+          .abs();
+      final spanLng = (bounds.northeast.longitude - bounds.southwest.longitude)
+          .abs();
+      if (places.shouldImport(
+        spanLat: spanLat,
+        spanLng: spanLng,
+        localCount: markers.length,
+      )) {
+        state = state.copyWith(importing: true);
+        final imported = await places.ensureCoverage(
+          lat: (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+          lng: (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+        );
+        if (imported > 0) {
+          markers = await repo.inBounds(
             minLng: bounds.southwest.longitude,
             minLat: bounds.southwest.latitude,
             maxLng: bounds.northeast.longitude,
             maxLat: bounds.northeast.latitude,
           );
+        }
+      }
+
       state = state.copyWith(
         markers: markers,
         loading: false,
+        importing: false,
         offline: false,
         boundsDirty: false,
       );
     } catch (_) {
-      final cached =
-          await ref.read(restaurantRepositoryProvider).cachedMarkers();
+      final cached = await ref
+          .read(restaurantRepositoryProvider)
+          .cachedMarkers();
       state = state.copyWith(
         markers: cached ?? state.markers,
         loading: false,
+        importing: false,
         offline: true,
         boundsDirty: false,
       );

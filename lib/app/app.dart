@@ -47,8 +47,10 @@ class _MissingConfigScreen extends StatelessWidget {
             children: [
               const Icon(Icons.settings_suggest_outlined, size: 56),
               const SizedBox(height: 16),
-              Text('Configuration missing',
-                  style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                'Configuration missing',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 8),
               const Text(
                 'Build with:\nflutter run --dart-define-from-file=dart_defines/dev.json\n\nSee SETUP.md for details.',

@@ -13,12 +13,12 @@ enum CollectionKind { saved, visited }
 
 final _collectionProvider = FutureProvider.autoDispose
     .family<List<Restaurant>, CollectionKind>((ref, kind) async {
-  final ids = switch (kind) {
-    CollectionKind.saved => ref.watch(savedIdsProvider).value ?? {},
-    CollectionKind.visited => ref.watch(visitedIdsProvider).value ?? {},
-  };
-  return ref.watch(restaurantRepositoryProvider).fetchByIds(ids.toList());
-});
+      final ids = switch (kind) {
+        CollectionKind.saved => ref.watch(savedIdsProvider).value ?? {},
+        CollectionKind.visited => ref.watch(visitedIdsProvider).value ?? {},
+      };
+      return ref.watch(restaurantRepositoryProvider).fetchByIds(ids.toList());
+    });
 
 /// Saved and Visited share one collection screen.
 class RestaurantCollectionScreen extends ConsumerWidget {
@@ -35,8 +35,9 @@ class RestaurantCollectionScreen extends ConsumerWidget {
       body: items.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => WbErrorState(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(_collectionProvider(kind))),
+          message: e.toString(),
+          onRetry: () => ref.invalidate(_collectionProvider(kind)),
+        ),
         data: (restaurants) => restaurants.isEmpty
             ? WbEmptyState(
                 icon: kind == CollectionKind.saved
@@ -57,31 +58,34 @@ class RestaurantCollectionScreen extends ConsumerWidget {
                   return Card(
                     child: ListTile(
                       leading: const Icon(Icons.restaurant),
-                      title: Text(r.name,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text([
-                        if (r.priceLevel != null) '\$' * r.priceLevel!,
-                        '${r.recCount} recs',
-                        if (r.score != null)
-                          '${r.score!.toStringAsFixed(1)}/10',
-                      ].join(' · ')),
+                      title: Text(
+                        r.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (r.priceLevel != null) '\$' * r.priceLevel!,
+                          '${r.recCount} recs',
+                          if (r.score != null)
+                            '${r.score!.toStringAsFixed(1)}/10',
+                        ].join(' · '),
+                      ),
                       trailing: IconButton(
                         tooltip: kind == CollectionKind.saved
                             ? 'Remove from saved'
                             : 'Remove from visited',
                         icon: const Icon(Icons.close),
                         onPressed: () => switch (kind) {
-                          CollectionKind.saved => ref
-                              .read(savedIdsProvider.notifier)
-                              .toggle(r.id),
-                          CollectionKind.visited => ref
-                              .read(visitedIdsProvider.notifier)
-                              .toggle(r.id),
+                          CollectionKind.saved =>
+                            ref.read(savedIdsProvider.notifier).toggle(r.id),
+                          CollectionKind.visited =>
+                            ref.read(visitedIdsProvider.notifier).toggle(r.id),
                         },
                       ),
-                      onTap: () => context.pushNamed(Routes.restaurant,
-                          pathParameters: {'id': r.id}),
+                      onTap: () => context.pushNamed(
+                        Routes.restaurant,
+                        pathParameters: {'id': r.id},
+                      ),
                     ),
                   );
                 },

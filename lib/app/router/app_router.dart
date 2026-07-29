@@ -84,41 +84,51 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => ShellScaffold(shell: shell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/map',
-              name: Routes.map,
-              builder: (_, _) => const MapScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/discover',
-              name: Routes.discover,
-              builder: (_, _) => const DiscoverScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/create',
-              name: Routes.create,
-              builder: (_, _) => const CreateMenuScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/notifications',
-              name: Routes.notifications,
-              builder: (_, _) => const NotificationsScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/profile',
-              name: Routes.profile,
-              builder: (_, _) => const ProfileScreen(),
-            ),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/map',
+                name: Routes.map,
+                builder: (_, _) => const MapScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/discover',
+                name: Routes.discover,
+                builder: (_, _) => const DiscoverScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/create',
+                name: Routes.create,
+                builder: (_, _) => const CreateMenuScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/notifications',
+                name: Routes.notifications,
+                builder: (_, _) => const NotificationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: Routes.profile,
+                builder: (_, _) => const ProfileScreen(),
+              ),
+            ],
+          ),
         ],
       ),
       // Detail routes push above the shell.
@@ -143,15 +153,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create/recommendation',
         name: Routes.createRecommendation,
-        redirect: (context, state) =>
-            _hasSession() ? null : '/welcome',
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const CreateRecommendationScreen(),
       ),
       GoRoute(
         path: '/create/list',
         name: Routes.createList,
-        redirect: (context, state) =>
-            _hasSession() ? null : '/welcome',
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const CreateListScreen(),
       ),
       GoRoute(
@@ -201,8 +209,9 @@ bool _hasSession() {
 class _AuthRefreshNotifier extends ChangeNotifier {
   _AuthRefreshNotifier() {
     try {
-      _sub = Supabase.instance.client.auth.onAuthStateChange
-          .listen((_) => notifyListeners());
+      _sub = Supabase.instance.client.auth.onAuthStateChange.listen(
+        (_) => notifyListeners(),
+      );
     } catch (_) {
       // Supabase not initialized: router works without auth.
     }

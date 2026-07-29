@@ -17,17 +17,21 @@ import '../data/discovery_repository.dart';
 
 final trendingTastersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
-        (ref) => ref.watch(discoveryRepositoryProvider).trendingTasters());
+      (ref) => ref.watch(discoveryRepositoryProvider).trendingTasters(),
+    );
 
 final trendingRestaurantsProvider =
     FutureProvider.autoDispose<List<Restaurant>>(
-        (ref) => ref.watch(discoveryRepositoryProvider).trendingRestaurants());
+      (ref) => ref.watch(discoveryRepositoryProvider).trendingRestaurants(),
+    );
 
 final newListsProvider = FutureProvider.autoDispose<List<FoodList>>(
-    (ref) => ref.watch(listRepositoryProvider).publicLists(limit: 10));
+  (ref) => ref.watch(listRepositoryProvider).publicLists(limit: 10),
+);
 
-final followingFeedProvider =
-    FutureProvider.autoDispose<List<Recommendation>>((ref) async {
+final followingFeedProvider = FutureProvider.autoDispose<List<Recommendation>>((
+  ref,
+) async {
   final following = ref.watch(followingIdsProvider).value ?? {};
   return ref.watch(discoveryRepositoryProvider).followingFeed(following);
 });
@@ -50,15 +54,14 @@ class DiscoverScreen extends ConsumerWidget {
               onPressed: () => context.pushNamed(Routes.search),
             ),
           ],
-          bottom: const TabBar(tabs: [
-            Tab(text: 'For you'),
-            Tab(text: 'Following'),
-          ]),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'For you'),
+              Tab(text: 'Following'),
+            ],
+          ),
         ),
-        body: const TabBarView(children: [
-          _ForYouTab(),
-          _FollowingTab(),
-        ]),
+        body: const TabBarView(children: [_ForYouTab(), _FollowingTab()]),
       ),
     );
   }
@@ -82,54 +85,64 @@ class _ForYouTab extends ConsumerWidget {
           _SectionHeader(title: 'Trending Tasters'),
           SizedBox(
             height: 120,
-            child: ref.watch(trendingTastersProvider).when(
+            child: ref
+                .watch(trendingTastersProvider)
+                .when(
                   loading: () => const Padding(
-                      padding: EdgeInsets.all(WbSpacing.md),
-                      child: WbSkeleton(height: 100)),
+                    padding: EdgeInsets.all(WbSpacing.md),
+                    child: WbSkeleton(height: 100),
+                  ),
                   error: (e, _) => Center(child: Text('$e')),
                   data: (tasters) => ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: WbSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: WbSpacing.md,
+                    ),
                     itemCount: tasters.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(width: WbSpacing.sm),
                     itemBuilder: (context, i) {
                       final t = tasters[i];
                       return InkWell(
-                        onTap: () => context.pushNamed(Routes.taster,
-                            pathParameters: {'id': t['id'] as String}),
-                        borderRadius:
-                            BorderRadius.circular(WbRadius.card),
+                        onTap: () => context.pushNamed(
+                          Routes.taster,
+                          pathParameters: {'id': t['id'] as String},
+                        ),
+                        borderRadius: BorderRadius.circular(WbRadius.card),
                         child: SizedBox(
                           width: 88,
-                          child: Column(children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundImage: t['avatar_url'] == null
-                                  ? null
-                                  : CachedNetworkImageProvider(
-                                      t['avatar_url'] as String),
-                              child: t['avatar_url'] == null
-                                  ? Text((t['display_name'] as String)
-                                      .characters
-                                      .first)
-                                  : null,
-                            ),
-                            const SizedBox(height: WbSpacing.xs),
-                            Text(
-                              t['display_name'] as String,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelMedium,
-                            ),
-                            Text(
-                              '${t['followers']} followers',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                  color:
-                                      theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ]),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: t['avatar_url'] == null
+                                    ? null
+                                    : CachedNetworkImageProvider(
+                                        t['avatar_url'] as String,
+                                      ),
+                                child: t['avatar_url'] == null
+                                    ? Text(
+                                        (t['display_name'] as String)
+                                            .characters
+                                            .first,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(height: WbSpacing.xs),
+                              Text(
+                                t['display_name'] as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelMedium,
+                              ),
+                              Text(
+                                '${t['followers']} followers',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -137,51 +150,74 @@ class _ForYouTab extends ConsumerWidget {
                 ),
           ),
           _SectionHeader(title: 'Trending restaurants'),
-          ref.watch(trendingRestaurantsProvider).when(
+          ref
+              .watch(trendingRestaurantsProvider)
+              .when(
                 loading: () => const Padding(
-                    padding: EdgeInsets.all(WbSpacing.md),
-                    child: WbSkeleton(height: 200)),
+                  padding: EdgeInsets.all(WbSpacing.md),
+                  child: WbSkeleton(height: 200),
+                ),
                 error: (e, _) => Padding(
-                    padding: const EdgeInsets.all(WbSpacing.md),
-                    child: Text('$e')),
-                data: (restaurants) => Column(children: [
-                  for (final r in restaurants.take(6))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          WbSpacing.md, 0, WbSpacing.md, WbSpacing.sm),
-                      child: Card(
-                        child: ListTile(
-                          onTap: () => context.pushNamed(Routes.restaurant,
-                              pathParameters: {'id': r.id}),
-                          leading: const Icon(Icons.local_fire_department,
-                              color: WbColors.markerTrending),
-                          title: Text(r.name,
+                  padding: const EdgeInsets.all(WbSpacing.md),
+                  child: Text('$e'),
+                ),
+                data: (restaurants) => Column(
+                  children: [
+                    for (final r in restaurants.take(6))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          WbSpacing.md,
+                          0,
+                          WbSpacing.md,
+                          WbSpacing.sm,
+                        ),
+                        child: Card(
+                          child: ListTile(
+                            onTap: () => context.pushNamed(
+                              Routes.restaurant,
+                              pathParameters: {'id': r.id},
+                            ),
+                            leading: const Icon(
+                              Icons.local_fire_department,
+                              color: WbColors.markerTrending,
+                            ),
+                            title: Text(
+                              r.name,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
-                          subtitle: Text([
-                            if (r.priceLevel != null) '\$' * r.priceLevel!,
-                            '${r.recCount} recs',
-                            if (r.score != null)
-                              '${r.score!.toStringAsFixed(1)}/10',
-                          ].join(' · ')),
-                          trailing: const Icon(Icons.chevron_right),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              [
+                                if (r.priceLevel != null) '\$' * r.priceLevel!,
+                                '${r.recCount} recs',
+                                if (r.score != null)
+                                  '${r.score!.toStringAsFixed(1)}/10',
+                              ].join(' · '),
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                          ),
                         ),
                       ),
-                    ),
-                ]),
+                  ],
+                ),
               ),
           _SectionHeader(title: 'New lists'),
           SizedBox(
             height: 140,
-            child: ref.watch(newListsProvider).when(
+            child: ref
+                .watch(newListsProvider)
+                .when(
                   loading: () => const Padding(
-                      padding: EdgeInsets.all(WbSpacing.md),
-                      child: WbSkeleton(height: 120)),
+                    padding: EdgeInsets.all(WbSpacing.md),
+                    child: WbSkeleton(height: 120),
+                  ),
                   error: (e, _) => Center(child: Text('$e')),
                   data: (lists) => ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: WbSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: WbSpacing.md,
+                    ),
                     itemCount: lists.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(width: WbSpacing.sm),
@@ -190,8 +226,10 @@ class _ForYouTab extends ConsumerWidget {
                       child: Card(
                         color: WbColors.voyage,
                         child: InkWell(
-                          onTap: () => context.pushNamed(Routes.list,
-                              pathParameters: {'id': lists[i].id}),
+                          onTap: () => context.pushNamed(
+                            Routes.list,
+                            pathParameters: {'id': lists[i].id},
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(WbSpacing.md),
                             child: Column(
@@ -203,14 +241,16 @@ class _ForYouTab extends ConsumerWidget {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.titleSmall?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   'by @${lists[i].owner?['username'] ?? ''}',
-                                  style: theme.textTheme.labelSmall
-                                      ?.copyWith(color: Colors.white70),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white70,
+                                  ),
                                 ),
                               ],
                             ),
@@ -247,8 +287,9 @@ class _FollowingTab extends ConsumerWidget {
     return feed.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => WbErrorState(
-          message: e.toString(),
-          onRetry: () => ref.invalidate(followingFeedProvider)),
+        message: e.toString(),
+        onRetry: () => ref.invalidate(followingFeedProvider),
+      ),
       data: (recs) => recs.isEmpty
           ? const WbEmptyState(
               icon: Icons.rss_feed,
@@ -264,8 +305,10 @@ class _FollowingTab extends ConsumerWidget {
                 itemBuilder: (context, i) => Padding(
                   padding: const EdgeInsets.only(bottom: WbSpacing.sm),
                   child: InkWell(
-                    onTap: () => context.pushNamed(Routes.restaurant,
-                        pathParameters: {'id': recs[i].restaurantId}),
+                    onTap: () => context.pushNamed(
+                      Routes.restaurant,
+                      pathParameters: {'id': recs[i].restaurantId},
+                    ),
                     child: RecommendationCard(recommendation: recs[i]),
                   ),
                 ),
@@ -284,12 +327,17 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          WbSpacing.md, WbSpacing.md, WbSpacing.md, WbSpacing.sm),
-      child: Text(title,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700)),
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.md,
+        WbSpacing.sm,
+      ),
+      child: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

@@ -34,13 +34,15 @@ class TasterAvatars extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: theme.colorScheme.surfaceContainerLow,
-                          width: 2),
+                        color: theme.colorScheme.surfaceContainerLow,
+                        width: 2,
+                      ),
                     ),
                     child: CircleAvatar(
                       radius: size / 2,
-                      backgroundColor:
-                          theme.colorScheme.primary.withValues(alpha: 0.15),
+                      backgroundColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.15,
+                      ),
                       backgroundImage: tasters[i].avatarUrl == null
                           ? null
                           : CachedNetworkImageProvider(tasters[i].avatarUrl!),

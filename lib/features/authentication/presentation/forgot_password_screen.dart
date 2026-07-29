@@ -55,8 +55,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   children: [
                     const Icon(Icons.mark_email_read_outlined, size: 56),
                     const SizedBox(height: WbSpacing.md),
-                    Text('Check your inbox',
-                        style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'Check your inbox',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: WbSpacing.sm),
                     const Text(
                       'If that email has an account, a reset link is on its way.',
@@ -74,9 +76,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: WbSpacing.md),
-                      Text(_error!,
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.error)),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: WbSpacing.lg),
                     FilledButton(

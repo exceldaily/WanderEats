@@ -7,7 +7,8 @@ import '../data/taster_repository.dart';
 /// Who the current user follows, with optimistic toggling.
 final followingIdsProvider =
     AsyncNotifierProvider<FollowingIdsController, Set<String>>(
-        FollowingIdsController.new);
+      FollowingIdsController.new,
+    );
 
 class FollowingIdsController extends AsyncNotifier<Set<String>> {
   @override
@@ -22,9 +23,11 @@ class FollowingIdsController extends AsyncNotifier<Set<String>> {
     if (session == null) return;
     final current = state.value ?? {};
     final following = !current.contains(tasterId);
-    state = AsyncData(following
-        ? {...current, tasterId}
-        : current.where((id) => id != tasterId).toSet());
+    state = AsyncData(
+      following
+          ? {...current, tasterId}
+          : current.where((id) => id != tasterId).toSet(),
+    );
     try {
       final repo = ref.read(tasterRepositoryProvider);
       if (following) {

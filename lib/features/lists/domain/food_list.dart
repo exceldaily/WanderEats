@@ -39,9 +39,9 @@ class ListPlace {
   final RestaurantMarker marker;
 
   factory ListPlace.fromJson(Map<String, dynamic> json) => ListPlace(
-        entryId: json['entry_id'] as String,
-        position: (json['sort_position'] as num?)?.toInt() ?? 0,
-        note: json['note'] as String?,
-        marker: RestaurantMarker.fromJson(json),
-      );
+    entryId: json['entry_id'] as String,
+    position: (json['sort_position'] as num?)?.toInt() ?? 0,
+    note: json['note'] as String?,
+    marker: RestaurantMarker.fromJson(json),
+  );
 }

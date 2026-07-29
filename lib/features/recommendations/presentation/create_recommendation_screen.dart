@@ -84,21 +84,25 @@ class _CreateRecommendationScreenState
         _order.text = (draft['order'] as String?) ?? '';
         if (draft['restaurant'] != null) {
           _restaurant = RestaurantMarker.fromJson(
-              (draft['restaurant'] as Map).cast<String, dynamic>());
+            (draft['restaurant'] as Map).cast<String, dynamic>(),
+          );
         }
       });
-    } catch (_) {/* corrupt draft: ignore */}
+    } catch (_) {
+      /* corrupt draft: ignore */
+    }
   }
 
   Future<void> _saveDraft() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _draftKey,
-        jsonEncode({
-          'body': _body.text,
-          'order': _order.text,
-          'restaurant': _restaurant?.toJson(),
-        }));
+      _draftKey,
+      jsonEncode({
+        'body': _body.text,
+        'order': _order.text,
+        'restaurant': _restaurant?.toJson(),
+      }),
+    );
   }
 
   Future<void> _clearDraft() async {
@@ -121,8 +125,10 @@ class _CreateRecommendationScreenState
     final restaurant = _restaurant;
     if (session == null || restaurant == null) return;
     if (_body.text.trim().length < 10) {
-      setState(() =>
-          _error = 'Say a little more: at least 10 characters of real advice.');
+      setState(
+        () => _error =
+            'Say a little more: at least 10 characters of real advice.',
+      );
       return;
     }
     setState(() {
@@ -132,11 +138,15 @@ class _CreateRecommendationScreenState
     try {
       final photoUrls = <String>[];
       for (final photo in _photos) {
-        photoUrls.add(await ref
-            .read(mediaUploaderProvider)
-            .uploadImage(file: photo, kind: 'rec'));
+        photoUrls.add(
+          await ref
+              .read(mediaUploaderProvider)
+              .uploadImage(file: photo, kind: 'rec'),
+        );
       }
-      await ref.read(recommendationRepositoryProvider).create(
+      await ref
+          .read(recommendationRepositoryProvider)
+          .create(
             userId: session.user.id,
             restaurantId: restaurant.id,
             body: _body.text.trim(),
@@ -148,19 +158,26 @@ class _CreateRecommendationScreenState
           );
       // A recommendation implies a visit.
       await ref.read(visitedIdsProvider.notifier).toggle(restaurant.id);
-      unawaited(ref
-          .read(analyticsProvider)
-          .recommendationCreated(restaurantId: restaurant.id));
+      unawaited(
+        ref
+            .read(analyticsProvider)
+            .recommendationCreated(restaurantId: restaurant.id),
+      );
       await _clearDraft();
       // Server-side badge check; celebrate anything new.
-      final badges = await ref.read(recommendationRepositoryProvider).awardBadges();
+      final badges = await ref
+          .read(recommendationRepositoryProvider)
+          .awardBadges();
       if (!mounted) return;
       if (badges.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Badge unlocked: ${badges.join(', ')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Badge unlocked: ${badges.join(', ')}')),
+        );
       }
-      context.pushReplacementNamed(Routes.restaurant,
-          pathParameters: {'id': restaurant.id});
+      context.pushReplacementNamed(
+        Routes.restaurant,
+        pathParameters: {'id': restaurant.id},
+      );
     } on AppException catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -198,22 +215,28 @@ class _CreateRecommendationScreenState
             const SizedBox(height: WbSpacing.md),
 
             // 2. Photos
-            Row(children: [
-              for (final photo in _photos)
-                Padding(
-                  padding: const EdgeInsets.only(right: WbSpacing.sm),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(WbRadius.chip),
-                    child:
-                        Image.file(photo, width: 64, height: 64, fit: BoxFit.cover),
+            Row(
+              children: [
+                for (final photo in _photos)
+                  Padding(
+                    padding: const EdgeInsets.only(right: WbSpacing.sm),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(WbRadius.chip),
+                      child: Image.file(
+                        photo,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
+                OutlinedButton.icon(
+                  onPressed: _pickPhotos,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: Text(_photos.isEmpty ? 'Add photos' : 'Change'),
                 ),
-              OutlinedButton.icon(
-                onPressed: _pickPhotos,
-                icon: const Icon(Icons.add_a_photo_outlined),
-                label: Text(_photos.isEmpty ? 'Add photos' : 'Change'),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: WbSpacing.md),
 
             // 3. The recommendation itself
@@ -252,48 +275,51 @@ class _CreateRecommendationScreenState
                   setState(() => _priceImpression = s.first),
             ),
             const SizedBox(height: WbSpacing.md),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.event_outlined),
-                  label: Text(
-                      'Visited ${_visitedOn.year}-${_visitedOn.month.toString().padLeft(2, '0')}-${_visitedOn.day.toString().padLeft(2, '0')}'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _visitedOn,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) setState(() => _visitedOn = picked);
-                  },
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.event_outlined),
+                    label: Text(
+                      'Visited ${_visitedOn.year}-${_visitedOn.month.toString().padLeft(2, '0')}-${_visitedOn.day.toString().padLeft(2, '0')}',
+                    ),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _visitedOn,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) setState(() => _visitedOn = picked);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: WbSpacing.sm),
-              DropdownMenu<String>(
-                initialSelection: _visibility,
-                onSelected: (v) =>
-                    setState(() => _visibility = v ?? 'public'),
-                dropdownMenuEntries: const [
-                  DropdownMenuEntry(value: 'public', label: 'Public'),
-                  DropdownMenuEntry(value: 'followers', label: 'Followers'),
-                  DropdownMenuEntry(value: 'private', label: 'Just me'),
-                ],
-              ),
-            ]),
+                const SizedBox(width: WbSpacing.sm),
+                DropdownMenu<String>(
+                  initialSelection: _visibility,
+                  onSelected: (v) =>
+                      setState(() => _visibility = v ?? 'public'),
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: 'public', label: 'Public'),
+                    DropdownMenuEntry(value: 'followers', label: 'Followers'),
+                    DropdownMenuEntry(value: 'private', label: 'Just me'),
+                  ],
+                ),
+              ],
+            ),
             if (_error != null) ...[
               const SizedBox(height: WbSpacing.md),
               Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
             ],
             const SizedBox(height: WbSpacing.lg),
             FilledButton(
-              onPressed:
-                  (_busy || _restaurant == null) ? null : _publish,
+              onPressed: (_busy || _restaurant == null) ? null : _publish,
               child: _busy
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Text('Publish recommendation'),
             ),
           ],

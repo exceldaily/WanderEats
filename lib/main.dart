@@ -43,15 +43,19 @@ Future<void> main() async {
     }
   }
 
-  runApp(ProviderScope(
-    overrides: [
-      if (firebaseReady) ...[
-        analyticsProvider.overrideWithValue(
-            FirebaseAnalyticsServiceImpl(FirebaseAnalytics.instance)),
-        pushServiceProvider.overrideWith(
-            (ref) => FirebasePushService(ref.watch(wbSchemaProvider))),
+  runApp(
+    ProviderScope(
+      overrides: [
+        if (firebaseReady) ...[
+          analyticsProvider.overrideWithValue(
+            FirebaseAnalyticsServiceImpl(FirebaseAnalytics.instance),
+          ),
+          pushServiceProvider.overrideWith(
+            (ref) => FirebasePushService(ref.watch(wbSchemaProvider)),
+          ),
+        ],
       ],
-    ],
-    child: const WanderBitesApp(),
-  ));
+      child: const WanderBitesApp(),
+    ),
+  );
 }

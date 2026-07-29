@@ -24,18 +24,23 @@ class FirebaseAnalyticsServiceImpl implements AnalyticsService {
   @override
   Future<void> markerSelected({required String restaurantId}) =>
       _analytics.logEvent(
-          name: 'marker_selected', parameters: {'restaurant_id': restaurantId});
+        name: 'marker_selected',
+        parameters: {'restaurant_id': restaurantId},
+      );
 
   @override
   Future<void> restaurantSaved({required String restaurantId}) =>
       _analytics.logEvent(
-          name: 'restaurant_saved', parameters: {'restaurant_id': restaurantId});
+        name: 'restaurant_saved',
+        parameters: {'restaurant_id': restaurantId},
+      );
 
   @override
   Future<void> restaurantVisited({required String restaurantId}) =>
       _analytics.logEvent(
-          name: 'restaurant_visited',
-          parameters: {'restaurant_id': restaurantId});
+        name: 'restaurant_visited',
+        parameters: {'restaurant_id': restaurantId},
+      );
 
   @override
   Future<void> tasterFollowed({required String tasterId}) => _analytics
@@ -44,40 +49,52 @@ class FirebaseAnalyticsServiceImpl implements AnalyticsService {
   @override
   Future<void> recommendationCreated({required String restaurantId}) =>
       _analytics.logEvent(
-          name: 'recommendation_created',
-          parameters: {'restaurant_id': restaurantId});
+        name: 'recommendation_created',
+        parameters: {'restaurant_id': restaurantId},
+      );
 
   @override
-  Future<void> recommendationFeedbackSubmitted(
-          {required String recommendationId}) =>
-      _analytics.logEvent(
-          name: 'recommendation_feedback_submitted',
-          parameters: {'recommendation_id': recommendationId});
+  Future<void> recommendationFeedbackSubmitted({
+    required String recommendationId,
+  }) => _analytics.logEvent(
+    name: 'recommendation_feedback_submitted',
+    parameters: {'recommendation_id': recommendationId},
+  );
 
   @override
-  Future<void> listCreated({required String listId}) =>
-      _analytics.logEvent(name: 'list_created', parameters: {'list_id': listId});
+  Future<void> listCreated({required String listId}) => _analytics.logEvent(
+    name: 'list_created',
+    parameters: {'list_id': listId},
+  );
 
   @override
-  Future<void> listFollowed({required String listId}) => _analytics
-      .logEvent(name: 'list_followed', parameters: {'list_id': listId});
+  Future<void> listFollowed({required String listId}) => _analytics.logEvent(
+    name: 'list_followed',
+    parameters: {'list_id': listId},
+  );
 
   @override
-  Future<void> searchPerformed(
-          {required String query, required int resultCount}) =>
-      _analytics.logSearch(searchTerm: query);
+  Future<void> searchPerformed({
+    required String query,
+    required int resultCount,
+  }) => _analytics.logSearch(searchTerm: query);
 
   @override
   Future<void> directionsOpened({required String restaurantId}) =>
       _analytics.logEvent(
-          name: 'directions_opened',
-          parameters: {'restaurant_id': restaurantId});
+        name: 'directions_opened',
+        parameters: {'restaurant_id': restaurantId},
+      );
 
   @override
-  Future<void> shareInitiated(
-          {required String contentType, required String id}) =>
-      _analytics.logShare(
-          contentType: contentType, itemId: id, method: 'share_sheet');
+  Future<void> shareInitiated({
+    required String contentType,
+    required String id,
+  }) => _analytics.logShare(
+    contentType: contentType,
+    itemId: id,
+    method: 'share_sheet',
+  );
 
   @override
   Future<void> subscriptionScreenViewed() =>

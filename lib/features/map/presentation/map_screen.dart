@@ -31,8 +31,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   // Default camera: over the seeded world; recenters on the user when
   // permission is granted.
-  static const _initialCamera =
-      CameraPosition(target: LatLng(40.7128, -74.0060), zoom: 12);
+  static const _initialCamera = CameraPosition(
+    target: LatLng(40.7128, -74.0060),
+    zoom: 12,
+  );
 
   @override
   void initState() {
@@ -47,14 +49,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final pos = await ref.read(locationServiceProvider).currentPosition();
     if (pos == null) {
       if (!silent && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-                'Location is off or not allowed. You can still explore the map.')));
+              'Location is off or not allowed. You can still explore the map.',
+            ),
+          ),
+        );
       }
       return;
     }
-    await _map?.animateCamera(CameraUpdate.newLatLngZoom(
-        LatLng(pos.latitude, pos.longitude), 13));
+    await _map?.animateCamera(
+      CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), 13),
+    );
   }
 
   Future<void> _onCameraIdle() async {
@@ -97,8 +104,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mapToolbarEnabled: false,
             onMapCreated: (c) => _map = c,
             onCameraIdle: _onCameraIdle,
-            onTap: (_) =>
-                ref.read(mapControllerProvider.notifier).select(null),
+            onTap: (_) => ref.read(mapControllerProvider.notifier).select(null),
             markers: {
               for (final m in visible)
                 Marker(
@@ -110,10 +116,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     m.id == mapState.selectedId
                         ? BitmapDescriptor.hueYellow
                         : savedIds.contains(m.id)
-                            ? BitmapDescriptor.hueRed
-                            : visitedIds.contains(m.id)
-                                ? BitmapDescriptor.hueViolet
-                                : BitmapDescriptor.hueGreen,
+                        ? BitmapDescriptor.hueRed
+                        : visitedIds.contains(m.id)
+                        ? BitmapDescriptor.hueViolet
+                        : BitmapDescriptor.hueGreen,
                   ),
                   infoWindow: InfoWindow(
                     title: m.name,
@@ -125,9 +131,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                   onTap: () {
                     ref.read(mapControllerProvider.notifier).select(m.id);
-                    unawaited(ref
-                        .read(analyticsProvider)
-                        .markerSelected(restaurantId: m.id));
+                    unawaited(
+                      ref
+                          .read(analyticsProvider)
+                          .markerSelected(restaurantId: m.id),
+                    );
                   },
                 ),
             },
@@ -159,7 +167,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         child: const Padding(
                           padding: EdgeInsets.all(WbSpacing.sm),
                           child: Text(
-                              'Offline: showing your last loaded places'),
+                            'Offline: showing your last loaded places',
+                          ),
                         ),
                       ),
                     ),
@@ -240,8 +249,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 }
 
 class _RoundButton extends StatelessWidget {
-  const _RoundButton(
-      {required this.icon, required this.onTap, required this.tooltip});
+  const _RoundButton({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
@@ -253,11 +265,7 @@ class _RoundButton extends StatelessWidget {
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       shape: const CircleBorder(),
       elevation: WbElevation.raisedCard,
-      child: IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon),
-        onPressed: onTap,
-      ),
+      child: IconButton(tooltip: tooltip, icon: Icon(icon), onPressed: onTap),
     );
   }
 }
@@ -310,8 +318,11 @@ class _FilterBar extends ConsumerWidget {
 }
 
 class _ListRow extends StatelessWidget {
-  const _ListRow(
-      {required this.marker, required this.saved, required this.onTap});
+  const _ListRow({
+    required this.marker,
+    required this.saved,
+    required this.onTap,
+  });
 
   final RestaurantMarker marker;
   final bool saved;
@@ -327,13 +338,17 @@ class _ListRow extends StatelessWidget {
           backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
           child: const Icon(Icons.restaurant),
         ),
-        title: Text(marker.name,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text([
-          if (marker.priceLevel != null) '\$' * marker.priceLevel!,
-          '${marker.recCount} recommendations',
-          if (marker.score != null) '${marker.score!.toStringAsFixed(1)}/10',
-        ].join(' · ')),
+        title: Text(
+          marker.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          [
+            if (marker.priceLevel != null) '\$' * marker.priceLevel!,
+            '${marker.recCount} recommendations',
+            if (marker.score != null) '${marker.score!.toStringAsFixed(1)}/10',
+          ].join(' · '),
+        ),
         trailing: saved
             ? const Icon(Icons.bookmark, color: WbColors.ember)
             : const Icon(Icons.chevron_right),

@@ -38,10 +38,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _error = null;
     });
     try {
-      await ref.read(authRepositoryProvider).signUpWithEmail(
-            email: _email.text.trim(),
-            password: _password.text,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signUpWithEmail(email: _email.text.trim(), password: _password.text);
       await ref.read(analyticsProvider).signUpCompleted(method: 'email');
       if (!mounted) return;
       if (ref.read(authRepositoryProvider).currentSession != null) {
@@ -49,9 +48,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       } else {
         // Email confirmation is enabled on the project: no session until the
         // link is clicked. The deep link brings the user back signed in.
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-                'Check your email to confirm your account, then come back and sign in.')));
+              'Check your email to confirm your account, then come back and sign in.',
+            ),
+          ),
+        );
         context.goNamed(Routes.signIn);
       }
     } on AppException catch (e) {
@@ -88,7 +91,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autofillHints: const [AutofillHints.newPassword],
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
-                    labelText: 'Password', helperText: 'At least 8 characters'),
+                  labelText: 'Password',
+                  helperText: 'At least 8 characters',
+                ),
                 validator: (v) => (v == null || v.length < 8)
                     ? 'Use at least 8 characters'
                     : null,
@@ -99,16 +104,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 obscureText: true,
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
-                decoration:
-                    const InputDecoration(labelText: 'Confirm password'),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm password',
+                ),
                 validator: (v) =>
                     v != _password.text ? 'Passwords do not match' : null,
               ),
               if (_error != null) ...[
                 const SizedBox(height: WbSpacing.md),
-                Text(_error!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: WbSpacing.lg),
               FilledButton(
@@ -117,7 +124,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Create account'),
               ),
             ],

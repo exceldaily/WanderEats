@@ -6,8 +6,9 @@ import '../data/restaurant_repository.dart';
 
 /// Saved + visited restaurant ids for the current user, with optimistic
 /// toggles that roll back on failure. Widgets watch these to paint states.
-final savedIdsProvider =
-    AsyncNotifierProvider<SavedIdsController, Set<String>>(SavedIdsController.new);
+final savedIdsProvider = AsyncNotifierProvider<SavedIdsController, Set<String>>(
+  SavedIdsController.new,
+);
 
 class SavedIdsController extends AsyncNotifier<Set<String>> {
   @override
@@ -25,9 +26,11 @@ class SavedIdsController extends AsyncNotifier<Set<String>> {
     final current = state.value ?? {};
     final saving = !current.contains(restaurantId);
     // Optimistic flip.
-    state = AsyncData(saving
-        ? {...current, restaurantId}
-        : current.where((id) => id != restaurantId).toSet());
+    state = AsyncData(
+      saving
+          ? {...current, restaurantId}
+          : current.where((id) => id != restaurantId).toSet(),
+    );
     try {
       final repo = ref.read(restaurantRepositoryProvider);
       if (saving) {
@@ -47,7 +50,8 @@ class SavedIdsController extends AsyncNotifier<Set<String>> {
 
 final visitedIdsProvider =
     AsyncNotifierProvider<VisitedIdsController, Set<String>>(
-        VisitedIdsController.new);
+      VisitedIdsController.new,
+    );
 
 class VisitedIdsController extends AsyncNotifier<Set<String>> {
   @override
@@ -64,9 +68,11 @@ class VisitedIdsController extends AsyncNotifier<Set<String>> {
     if (session == null) return;
     final current = state.value ?? {};
     final visiting = !current.contains(restaurantId);
-    state = AsyncData(visiting
-        ? {...current, restaurantId}
-        : current.where((id) => id != restaurantId).toSet());
+    state = AsyncData(
+      visiting
+          ? {...current, restaurantId}
+          : current.where((id) => id != restaurantId).toSet(),
+    );
     try {
       final repo = ref.read(restaurantRepositoryProvider);
       if (visiting) {

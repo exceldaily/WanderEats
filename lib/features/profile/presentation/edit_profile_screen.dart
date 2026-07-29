@@ -48,12 +48,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'home_city_id': _homeCityId,
       };
       if (_newAvatar != null) {
-        patch['avatar_url'] =
-            await uploader.uploadImage(file: _newAvatar!, kind: 'avatar');
+        patch['avatar_url'] = await uploader.uploadImage(
+          file: _newAvatar!,
+          kind: 'avatar',
+        );
       }
       if (_newHeader != null) {
-        patch['header_url'] =
-            await uploader.uploadImage(file: _newHeader!, kind: 'header');
+        patch['header_url'] = await uploader.uploadImage(
+          file: _newHeader!,
+          kind: 'header',
+        );
       }
       await ref.read(myProfileProvider.notifier).updateProfile(patch);
       if (mounted) Navigator.of(context).pop();
@@ -65,8 +69,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<File?> _pick() async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 90);
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
     return picked == null ? null : File(picked.path);
   }
 
@@ -110,8 +116,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 backgroundImage: _newAvatar != null
                     ? FileImage(_newAvatar!)
                     : (profile.avatarUrl != null
-                        ? CachedNetworkImageProvider(profile.avatarUrl!)
-                        : null) as ImageProvider?,
+                              ? CachedNetworkImageProvider(profile.avatarUrl!)
+                              : null)
+                          as ImageProvider?,
                 child: _newAvatar == null && profile.avatarUrl == null
                     ? const Icon(Icons.add_a_photo_outlined, size: 32)
                     : null,
@@ -126,9 +133,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 if (f != null) setState(() => _newHeader = f);
               },
               icon: const Icon(Icons.wallpaper_outlined, size: 18),
-              label: Text(_newHeader == null
-                  ? 'Change header image'
-                  : 'Header image selected'),
+              label: Text(
+                _newHeader == null
+                    ? 'Change header image'
+                    : 'Header image selected',
+              ),
             ),
           ),
           const SizedBox(height: WbSpacing.md),
@@ -147,14 +156,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SizedBox(height: WbSpacing.md),
           Text('Home city', style: theme.textTheme.labelLarge),
           const SizedBox(height: WbSpacing.xs),
-          Wrap(spacing: WbSpacing.sm, runSpacing: WbSpacing.sm, children: [
-            for (final city in cities)
-              ChoiceChip(
-                label: Text(city.name),
-                selected: _homeCityId == city.id,
-                onSelected: (_) => setState(() => _homeCityId = city.id),
-              ),
-          ]),
+          Wrap(
+            spacing: WbSpacing.sm,
+            runSpacing: WbSpacing.sm,
+            children: [
+              for (final city in cities)
+                ChoiceChip(
+                  label: Text(city.name),
+                  selected: _homeCityId == city.id,
+                  onSelected: (_) => setState(() => _homeCityId = city.id),
+                ),
+            ],
+          ),
           if (_error != null) ...[
             const SizedBox(height: WbSpacing.md),
             Text(_error!, style: TextStyle(color: theme.colorScheme.error)),

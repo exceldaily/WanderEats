@@ -57,8 +57,10 @@ class ListRepository {
 
   Future<List<ListPlace>> places(String listId) async {
     try {
-      final rows = await _schema
-          .rpc<List<dynamic>>('list_places', params: {'lid': listId});
+      final rows = await _schema.rpc<List<dynamic>>(
+        'list_places',
+        params: {'lid': listId},
+      );
       return rows.cast<Map<String, dynamic>>().map(ListPlace.fromJson).toList();
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
@@ -79,8 +81,7 @@ class ListRepository {
     return {
       'followers': followers.length,
       'likes': likes.length,
-      'i_follow':
-          myId != null && followers.any((r) => r['user_id'] == myId),
+      'i_follow': myId != null && followers.any((r) => r['user_id'] == myId),
       'i_like': myId != null && likes.any((r) => r['user_id'] == myId),
     };
   }
@@ -94,15 +95,19 @@ class ListRepository {
     String? coverUrl,
   }) async {
     try {
-      final row = await _schema.from('lists').insert({
-        'owner_id': ownerId,
-        'title': title,
-        if (description != null && description.isNotEmpty)
-          'description': description,
-        'visibility': visibility,
-        'is_collaborative': isCollaborative,
-        'cover_url': ?coverUrl,
-      }).select(_select).single();
+      final row = await _schema
+          .from('lists')
+          .insert({
+            'owner_id': ownerId,
+            'title': title,
+            if (description != null && description.isNotEmpty)
+              'description': description,
+            'visibility': visibility,
+            'is_collaborative': isCollaborative,
+            'cover_url': ?coverUrl,
+          })
+          .select(_select)
+          .single();
       return FoodList.fromJson(row);
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
@@ -168,9 +173,10 @@ class ListRepository {
 
   Future<void> followList(String myId, String listId) async {
     try {
-      await _schema
-          .from('list_follows')
-          .insert({'user_id': myId, 'list_id': listId});
+      await _schema.from('list_follows').insert({
+        'user_id': myId,
+        'list_id': listId,
+      });
     } on PostgrestException catch (e) {
       if (e.code != '23505') throw ServerException(cause: e);
     }

@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/widgets/wb_photo.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/data/restaurant_repository.dart';
 import '../../restaurants/domain/restaurant.dart';
@@ -13,13 +13,16 @@ import '../../restaurants/presentation/widgets/taster_avatars.dart';
 
 final _summaryProvider = FutureProvider.autoDispose
     .family<RestaurantSummary, String>((ref, id) {
-  return ref.watch(restaurantRepositoryProvider).fetchSummary(id);
-});
+      return ref.watch(restaurantRepositoryProvider).fetchSummary(id);
+    });
 
 /// Draggable bottom card over the map: collapsed, medium, expanded.
 class RestaurantPreviewCard extends ConsumerWidget {
-  const RestaurantPreviewCard(
-      {super.key, required this.marker, required this.onClose});
+  const RestaurantPreviewCard({
+    super.key,
+    required this.marker,
+    required this.onClose,
+  });
 
   final RestaurantMarker marker;
   final VoidCallback onClose;
@@ -28,8 +31,7 @@ class RestaurantPreviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final summary = ref.watch(_summaryProvider(marker.id));
-    final saved =
-        (ref.watch(savedIdsProvider).value ?? {}).contains(marker.id);
+    final saved = (ref.watch(savedIdsProvider).value ?? {}).contains(marker.id);
 
     return DraggableScrollableSheet(
       key: ValueKey(marker.id),
@@ -41,8 +43,9 @@ class RestaurantPreviewCard extends ConsumerWidget {
       builder: (context, scrollController) {
         return Material(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(WbRadius.sheet)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(WbRadius.sheet),
+          ),
           elevation: WbElevation.sheet,
           child: ListView(
             controller: scrollController,
@@ -69,16 +72,10 @@ class RestaurantPreviewCard extends ConsumerWidget {
                       child: SizedBox(
                         width: 72,
                         height: 72,
-                        child: marker.coverPhotoUrl == null
-                            ? Container(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                child: const Icon(Icons.restaurant, size: 28),
-                              )
-                            : CachedNetworkImage(
-                                imageUrl: marker.coverPhotoUrl!,
-                                fit: BoxFit.cover,
-                              ),
+                        child: WbPhoto(
+                          source: marker.coverPhotoUrl,
+                          semanticLabel: 'Photo of ${marker.name}',
+                        ),
                       ),
                     ),
                     const SizedBox(width: WbSpacing.md),
@@ -86,9 +83,12 @@ class RestaurantPreviewCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(marker.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700)),
+                          Text(
+                            marker.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             [
@@ -101,7 +101,8 @@ class RestaurantPreviewCard extends ConsumerWidget {
                               '${marker.recCount} recs',
                             ].join(' · '),
                             style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant),
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -115,8 +116,7 @@ class RestaurantPreviewCard extends ConsumerWidget {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: WbSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: WbSpacing.md),
                 child: summary.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(vertical: WbSpacing.sm),
@@ -127,9 +127,12 @@ class RestaurantPreviewCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (s.tasters.isNotEmpty) ...[
-                        Text('Recommended by',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
+                        Text(
+                          'Recommended by',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                         const SizedBox(height: WbSpacing.xs),
                         TasterAvatars(tasters: s.tasters),
                       ],
@@ -139,13 +142,15 @@ class RestaurantPreviewCard extends ConsumerWidget {
                           '"${s.topQuote!['body']}"',
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(fontStyle: FontStyle.italic),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                         Text(
                           '@${s.topQuote!['username']}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant),
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ],
@@ -158,10 +163,12 @@ class RestaurantPreviewCard extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: FilledButton.tonalIcon(
-                        onPressed: () =>
-                            ref.read(savedIdsProvider.notifier).toggle(marker.id),
+                        onPressed: () => ref
+                            .read(savedIdsProvider.notifier)
+                            .toggle(marker.id),
                         icon: Icon(
-                            saved ? Icons.bookmark : Icons.bookmark_outline),
+                          saved ? Icons.bookmark : Icons.bookmark_outline,
+                        ),
                         label: Text(saved ? 'Saved' : 'Save'),
                       ),
                     ),

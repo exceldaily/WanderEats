@@ -12,12 +12,13 @@ import '../../lists/domain/food_list.dart';
 import '../../tasters/presentation/taster_profile_screen.dart';
 import '../data/profile_repository.dart';
 
-final myBadgesProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final session = ref.watch(sessionProvider);
-  if (session == null) return [];
-  return ref.watch(profileRepositoryProvider).earnedBadges(session.user.id);
-});
+final myBadgesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+  (ref) async {
+    final session = ref.watch(sessionProvider);
+    if (session == null) return [];
+    return ref.watch(profileRepositoryProvider).earnedBadges(session.user.id);
+  },
+);
 
 final myListsProvider = FutureProvider.autoDispose<List<FoodList>>((ref) async {
   final session = ref.watch(sessionProvider);
@@ -42,8 +43,7 @@ class ProfileScreen extends ConsumerWidget {
         body: WbEmptyState(
           icon: Icons.person_outline,
           title: 'Sign in to build your food map',
-          message:
-              'Save places, follow Tasters and publish recommendations.',
+          message: 'Save places, follow Tasters and publish recommendations.',
           actionLabel: 'Sign in',
           onAction: () => context.goNamed(Routes.welcome),
         ),
@@ -64,8 +64,9 @@ class ProfileScreen extends ConsumerWidget {
       body: profile.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => WbErrorState(
-            message: e.toString(),
-            onRetry: () => ref.read(myProfileProvider.notifier).refresh()),
+          message: e.toString(),
+          onRetry: () => ref.read(myProfileProvider.notifier).refresh(),
+        ),
         data: (p) {
           if (p == null) {
             return WbEmptyState(
@@ -87,36 +88,46 @@ class ProfileScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(WbSpacing.md),
               children: [
-                Row(children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundImage: p.avatarUrl == null
-                        ? null
-                        : CachedNetworkImageProvider(p.avatarUrl!),
-                    child: p.avatarUrl == null
-                        ? Text(p.displayName.characters.first,
-                            style: theme.textTheme.headlineSmall)
-                        : null,
-                  ),
-                  const SizedBox(width: WbSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.displayName,
-                            style: theme.textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700)),
-                        Text('@${p.username}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
-                      ],
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: p.avatarUrl == null
+                          ? null
+                          : CachedNetworkImageProvider(p.avatarUrl!),
+                      child: p.avatarUrl == null
+                          ? Text(
+                              p.displayName.characters.first,
+                              style: theme.textTheme.headlineSmall,
+                            )
+                          : null,
                     ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => context.pushNamed(Routes.editProfile),
-                    child: const Text('Edit'),
-                  ),
-                ]),
+                    const SizedBox(width: WbSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.displayName,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            '@${p.username}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => context.pushNamed(Routes.editProfile),
+                      child: const Text('Edit'),
+                    ),
+                  ],
+                ),
                 if (p.bio != null) ...[
                   const SizedBox(height: WbSpacing.sm),
                   Text(p.bio!, style: theme.textTheme.bodyMedium),
@@ -125,71 +136,90 @@ class ProfileScreen extends ConsumerWidget {
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(WbSpacing.md),
-                    child: Row(children: [
-                      _Stat('Followers', stats?['followers']),
-                      _Stat('Recs', stats?['recommendations']),
-                      _Stat('Cities', stats?['cities_explored']),
-                      _Stat('Countries', stats?['countries_visited']),
-                      _Stat('Score', stats?['reputation']),
-                    ]),
+                    child: Row(
+                      children: [
+                        _Stat('Followers', stats?['followers']),
+                        _Stat('Recs', stats?['recommendations']),
+                        _Stat('Cities', stats?['cities_explored']),
+                        _Stat('Countries', stats?['countries_visited']),
+                        _Stat('Score', stats?['reputation']),
+                      ],
+                    ),
                   ),
                 ),
                 if (badges.isNotEmpty) ...[
                   const SizedBox(height: WbSpacing.md),
-                  Text('Badges',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Badges',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: WbSpacing.sm),
-                  Wrap(spacing: WbSpacing.sm, runSpacing: WbSpacing.sm, children: [
-                    for (final b in badges)
-                      Tooltip(
-                        message: (b['badges'] as Map?)?['description']
-                                as String? ??
-                            '',
-                        child: Chip(
-                          avatar: const Icon(Icons.emoji_events, size: 16),
-                          label: Text(
-                              (b['badges'] as Map?)?['name'] as String? ?? ''),
+                  Wrap(
+                    spacing: WbSpacing.sm,
+                    runSpacing: WbSpacing.sm,
+                    children: [
+                      for (final b in badges)
+                        Tooltip(
+                          message:
+                              (b['badges'] as Map?)?['description']
+                                  as String? ??
+                              '',
+                          child: Chip(
+                            avatar: const Icon(Icons.emoji_events, size: 16),
+                            label: Text(
+                              (b['badges'] as Map?)?['name'] as String? ?? '',
+                            ),
+                          ),
                         ),
-                      ),
-                  ]),
+                    ],
+                  ),
                 ],
                 const SizedBox(height: WbSpacing.md),
                 Card(
-                  child: Column(children: [
-                    ListTile(
-                      leading: const Icon(Icons.map_outlined),
-                      title: const Text('My food map'),
-                      subtitle: const Text(
-                          'Every place you recommend, save and visit'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.pushNamed(Routes.taster,
-                          pathParameters: {'id': p.id}),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.bookmark_outline),
-                      title: const Text('Saved restaurants'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.pushNamed(Routes.savedRestaurants),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.where_to_vote_outlined),
-                      title: const Text('Visited restaurants'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          context.pushNamed(Routes.visitedRestaurants),
-                    ),
-                  ]),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.map_outlined),
+                        title: const Text('My food map'),
+                        subtitle: const Text(
+                          'Every place you recommend, save and visit',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.pushNamed(
+                          Routes.taster,
+                          pathParameters: {'id': p.id},
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.bookmark_outline),
+                        title: const Text('Saved restaurants'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.pushNamed(Routes.savedRestaurants),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.where_to_vote_outlined),
+                        title: const Text('Visited restaurants'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            context.pushNamed(Routes.visitedRestaurants),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: WbSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('My lists',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      'My lists',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () => context.pushNamed(Routes.createList),
                       child: const Text('New list'),
@@ -197,22 +227,30 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
                 if (lists.isEmpty)
-                  Text('No lists yet. Curate your first one.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant))
+                  Text(
+                    'No lists yet. Curate your first one.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
                 else
                   for (final l in lists)
                     Card(
                       child: ListTile(
-                        leading: Icon(l.visibility == 'private'
-                            ? Icons.lock_outline
-                            : Icons.playlist_play),
+                        leading: Icon(
+                          l.visibility == 'private'
+                              ? Icons.lock_outline
+                              : Icons.playlist_play,
+                        ),
                         title: Text(l.title),
-                        subtitle:
-                            l.description != null ? Text(l.description!) : null,
+                        subtitle: l.description != null
+                            ? Text(l.description!)
+                            : null,
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => context.pushNamed(Routes.list,
-                            pathParameters: {'id': l.id}),
+                        onTap: () => context.pushNamed(
+                          Routes.list,
+                          pathParameters: {'id': l.id},
+                        ),
                       ),
                     ),
                 const SizedBox(height: WbSpacing.xl),
@@ -235,14 +273,22 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Expanded(
-      child: Column(children: [
-        Text('${value ?? '-'}',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700)),
-        Text(label,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ]),
+      child: Column(
+        children: [
+          Text(
+            '${value ?? '-'}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

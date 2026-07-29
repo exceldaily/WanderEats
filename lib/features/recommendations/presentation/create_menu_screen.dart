@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,20 +46,22 @@ class CreateMenuScreen extends ConsumerWidget {
             onTap: () async {
               final picked = await showRestaurantPicker(context);
               if (picked == null) return;
-              final visited =
-                  ref.read(visitedIdsProvider).value ?? <String>{};
+              final visited = ref.read(visitedIdsProvider).value ?? <String>{};
               if (visited.contains(picked.id)) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content:
-                          Text('${picked.name} is already on your map.')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${picked.name} is already on your map.'),
+                    ),
+                  );
                 }
                 return;
               }
               await ref.read(visitedIdsProvider.notifier).toggle(picked.id);
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('${picked.name} marked visited.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${picked.name} marked visited.')),
+                );
               }
             },
           ),

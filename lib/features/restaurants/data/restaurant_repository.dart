@@ -26,13 +26,16 @@ class RestaurantRepository {
     int maxRows = 200,
   }) async {
     try {
-      final rows = await _schema.rpc<List<dynamic>>('restaurants_in_bounds', params: {
-        'min_lng': minLng,
-        'min_lat': minLat,
-        'max_lng': maxLng,
-        'max_lat': maxLat,
-        'max_rows': maxRows,
-      });
+      final rows = await _schema.rpc<List<dynamic>>(
+        'restaurants_in_bounds',
+        params: {
+          'min_lng': minLng,
+          'min_lat': minLat,
+          'max_lng': maxLng,
+          'max_lat': maxLat,
+          'max_rows': maxRows,
+        },
+      );
       final markers = rows
           .cast<Map<String, dynamic>>()
           .map(RestaurantMarker.fromJson)
@@ -56,12 +59,15 @@ class RestaurantRepository {
     int maxRows = 50,
   }) async {
     try {
-      final rows = await _schema.rpc<List<dynamic>>('nearby_restaurants', params: {
-        'in_lng': lng,
-        'in_lat': lat,
-        'radius_m': radiusM,
-        'max_rows': maxRows,
-      });
+      final rows = await _schema.rpc<List<dynamic>>(
+        'nearby_restaurants',
+        params: {
+          'in_lng': lng,
+          'in_lat': lat,
+          'radius_m': radiusM,
+          'max_rows': maxRows,
+        },
+      );
       return rows
           .cast<Map<String, dynamic>>()
           .map(RestaurantMarker.fromJson)
@@ -73,13 +79,16 @@ class RestaurantRepository {
 
   /// Simple name search for pickers (create flows). Universal search uses
   /// the grouped search_all RPC instead.
-  Future<List<RestaurantMarker>> searchByName(String query,
-      {int limit = 20}) async {
+  Future<List<RestaurantMarker>> searchByName(
+    String query, {
+    int limit = 20,
+  }) async {
     try {
       final rows = await _schema
           .from('restaurants')
           .select(
-              'id, name, price_level, rec_count, save_count, score, cover_photo_url, city_id')
+            'id, name, price_level, rec_count, save_count, score, cover_photo_url, city_id',
+          )
           .ilike('name', '%$query%')
           .isFilter('deleted_at', null)
           .order('rec_count', ascending: false)
@@ -94,8 +103,11 @@ class RestaurantRepository {
 
   Future<Restaurant> fetchRestaurant(String id) async {
     try {
-      final row =
-          await _schema.from('restaurants').select().eq('id', id).maybeSingle();
+      final row = await _schema
+          .from('restaurants')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
       if (row == null) throw const NotFoundException('Restaurant not found');
       return Restaurant.fromJson(row);
     } on PostgrestException catch (e) {
@@ -105,8 +117,10 @@ class RestaurantRepository {
 
   Future<RestaurantSummary> fetchSummary(String id) async {
     try {
-      final json = await _schema
-          .rpc<Map<String, dynamic>>('restaurant_summary', params: {'rid': id});
+      final json = await _schema.rpc<Map<String, dynamic>>(
+        'restaurant_summary',
+        params: {'rid': id},
+      );
       return RestaurantSummary.fromJson(json);
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
@@ -119,9 +133,9 @@ class RestaurantRepository {
         .select('cuisines(name)')
         .eq('restaurant_id', restaurantId);
     return rows
-        .map((r) =>
-            (r['cuisines']
-                as Map<String, dynamic>?)?['name'] as String?)
+        .map(
+          (r) => (r['cuisines'] as Map<String, dynamic>?)?['name'] as String?,
+        )
         .whereType<String>()
         .toList();
   }
@@ -133,9 +147,7 @@ class RestaurantRepository {
         .from('restaurant_saves')
         .select('restaurant_id')
         .eq('user_id', userId);
-    return rows
-        .map((r) => r['restaurant_id'] as String)
-        .toSet();
+    return rows.map((r) => r['restaurant_id'] as String).toSet();
   }
 
   Future<Set<String>> fetchMyVisitedIds(String userId) async {
@@ -143,9 +155,7 @@ class RestaurantRepository {
         .from('restaurant_visits')
         .select('restaurant_id')
         .eq('user_id', userId);
-    return rows
-        .map((r) => r['restaurant_id'] as String)
-        .toSet();
+    return rows.map((r) => r['restaurant_id'] as String).toSet();
   }
 
   Future<void> save(String userId, String restaurantId) async {
@@ -167,8 +177,11 @@ class RestaurantRepository {
         .eq('restaurant_id', restaurantId);
   }
 
-  Future<void> markVisited(String userId, String restaurantId,
-      {DateTime? visitedOn}) async {
+  Future<void> markVisited(
+    String userId,
+    String restaurantId, {
+    DateTime? visitedOn,
+  }) async {
     try {
       await _schema.from('restaurant_visits').upsert({
         'user_id': userId,
@@ -227,7 +240,9 @@ class RestaurantRepository {
   Future<void> _cacheMarkers(List<RestaurantMarker> markers) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _markerCacheKey, jsonEncode(markers.map((m) => m.toJson()).toList()));
+      _markerCacheKey,
+      jsonEncode(markers.map((m) => m.toJson()).toList()),
+    );
   }
 
   Future<List<RestaurantMarker>?> cachedMarkers() async {

@@ -14,7 +14,7 @@ sealed class AppException implements Exception {
 
 class NetworkException extends AppException {
   const NetworkException({Object? cause})
-      : super('No connection. Check your network and try again.', cause: cause);
+    : super('No connection. Check your network and try again.', cause: cause);
 }
 
 class AuthException extends AppException {
@@ -26,8 +26,9 @@ class NotFoundException extends AppException {
 }
 
 class PermissionDeniedException extends AppException {
-  const PermissionDeniedException(
-      [super.message = 'You do not have access to this']);
+  const PermissionDeniedException([
+    super.message = 'You do not have access to this',
+  ]);
 }
 
 class ValidationException extends AppException {
@@ -36,11 +37,13 @@ class ValidationException extends AppException {
 
 class ServerException extends AppException {
   const ServerException({Object? cause})
-      : super('Something went wrong on our side. Try again in a moment.',
-            cause: cause);
+    : super(
+        'Something went wrong on our side. Try again in a moment.',
+        cause: cause,
+      );
 }
 
 class OfflineDataException extends AppException {
   const OfflineDataException()
-      : super('You are offline and this has not been cached yet.');
+    : super('You are offline and this has not been cached yet.');
 }

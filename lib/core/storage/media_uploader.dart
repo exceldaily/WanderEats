@@ -20,10 +20,7 @@ class MediaUploader {
 
   /// Compresses and uploads, returns the public URL.
   /// [kind] becomes a folder: avatar, header, rec, restaurant.
-  Future<String> uploadImage({
-    required File file,
-    required String kind,
-  }) async {
+  Future<String> uploadImage({required File file, required String kind}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) {
       throw const AuthException('Sign in to upload photos.');
@@ -38,13 +35,16 @@ class MediaUploader {
     );
     final bytes = compressed ?? await file.readAsBytes();
     if (bytes.length > _maxBytes) {
-      throw const ValidationException('Photo is too large even after compression (max 5 MB).');
+      throw const ValidationException(
+        'Photo is too large even after compression (max 5 MB).',
+      );
     }
 
-    final path =
-        '$uid/$kind/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final path = '$uid/$kind/${DateTime.now().millisecondsSinceEpoch}.jpg';
     try {
-      await _client.storage.from(_bucket).uploadBinary(
+      await _client.storage
+          .from(_bucket)
+          .uploadBinary(
             path,
             bytes,
             fileOptions: const FileOptions(contentType: 'image/jpeg'),
