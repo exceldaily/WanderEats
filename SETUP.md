@@ -64,18 +64,27 @@ Supabase Auth -> Rate Limits). Note: signing up with an email that already has
 an account in the shared pool intentionally sends nothing (anti-enumeration) —
 those users must sign in instead.
 
-## 6. Google Maps key (the one manual step left)
+## 6. Google Maps key (done July 29 2026)
 
-Maps SDK for Android could not be enabled without a billing account attached to `wanderbites-503816` — that's a payment step only the account owner can complete.
+Billing account "WonderBites" (0158B5-F9AA82-ECC284) is linked to project
+`wanderbites-503816`, Maps SDK for Android is enabled, and API key
+"WanderBites Maps Android" is created and restricted to:
+- Application: Android apps, package `com.wanderbites.app`, both SHA-1 certs
+  (release keystore + local debug keystore, so `flutter run` also works)
+- API: Maps SDK for Android only
 
-1. https://console.cloud.google.com/billing?project=wanderbites-503816 -> attach or create a billing account
-2. https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com?project=wanderbites-503816 -> Enable
-3. https://console.cloud.google.com/google/maps-apis/credentials?project=wanderbites-503816 -> create an API key, restrict it to Android apps with package `com.wanderbites.app` plus your release SHA-1 (get it with `cd android && ./gradlew signingReport`, or from Firebase project settings once the app is registered)
-4. Put the key in two places:
-   - `dart_defines/dev.json` -> GOOGLE_MAPS_API_KEY (runtime feature checks)
-   - `android/local.properties` -> `MAPS_API_KEY=...` (native SDK)
+The key lives in two gitignored files — pull it from the Cloud console
+credentials page if setting up a new machine:
+- `dart_defines/dev.json` -> GOOGLE_MAPS_API_KEY (runtime feature checks)
+- `android/local.properties` -> `MAPS_API_KEY=...` (native SDK)
 
-Everything else in the app works without this; only the map tab shows a setup notice until it's done.
+A monthly budget alert ("WanderBites Maps spend alert", $10 with email at
+50/90/100%) is configured on the billing account. Maps also carries a
+standing $200/month free credit, so expected real cost at small scale is $0.
+
+NOTE: adding a new SHA-1 (e.g. Play App Signing when you publish) requires
+adding that fingerprint to the key's Android restrictions, or maps go blank
+in that build.
 
 ## 7. Run
 
