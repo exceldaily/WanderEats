@@ -27,6 +27,7 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  bannerStyle: json['banner_style'] as String? ?? 'voyage',
   tastePersonality:
       json['taste_personality'] as Map<String, dynamic>? ??
       const <String, dynamic>{},
@@ -46,6 +47,7 @@ Map<String, dynamic> _$ProfileToJson(_Profile instance) => <String, dynamic>{
   'onboarding_completed': instance.onboardingCompleted,
   'favorite_cuisines': instance.favoriteCuisines,
   'taste_tags': instance.tasteTags,
+  'banner_style': instance.bannerStyle,
   'taste_personality': instance.tastePersonality,
   'created_at': instance.createdAt.toIso8601String(),
 };

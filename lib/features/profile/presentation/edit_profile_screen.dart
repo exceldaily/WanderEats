@@ -1,15 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/storage/media_uploader.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../restaurants/data/reference_repository.dart';
+import 'widgets/profile_header.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -51,7 +54,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _displayName = TextEditingController();
   final _bio = TextEditingController();
   final _favoriteCuisine = TextEditingController();
+  final _citySearch = TextEditingController();
+  Timer? _cityDebounce;
   String? _homeCityId;
+
+  /// Label for a home city picked via worldwide search (not yet in the
+  /// cities chip list).
+  String? _homeCityLabel;
+  List<Map<String, dynamic>> _cityResults = [];
+  bool _citySearching = false;
+  String _bannerStyle = 'voyage';
   File? _newAvatar;
   File? _newHeader;
   bool _busy = false;
@@ -65,7 +77,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _displayName.dispose();
     _bio.dispose();
     _favoriteCuisine.dispose();
+    _citySearch.dispose();
+    _cityDebounce?.cancel();
     super.dispose();
+  }
+
+  /// Worldwide city search: geocodes through the backend, which also
+  /// registers the city so it becomes a real home_city_id.
+  void _onCitySearchChanged(String value) {
+    _cityDebounce?.cancel();
+    final q = value.trim();
+    if (q.length < 2) {
+      setState(() => _cityResults = []);
+      return;
+    }
+    _cityDebounce = Timer(const Duration(milliseconds: 500), () async {
+      setState(() => _citySearching = true);
+      try {
+        final res = await Supabase.instance.client.functions.invoke(
+          'places-search',
+          body: {'query': q, 'areasOnly': true, 'ensureCity': true},
+        );
+        final data = res.data;
+        if (!mounted || _citySearch.text.trim() != q) return;
+        setState(() {
+          _cityResults = data is Map
+              ? ((data['areas'] as List?) ?? const [])
+                    .whereType<Map>()
+                    .where((a) => a['city_id'] is String)
+                    .map((a) => a.cast<String, dynamic>())
+                    .toList()
+              : [];
+        });
+      } catch (_) {
+        if (mounted) setState(() => _cityResults = []);
+      } finally {
+        if (mounted) setState(() => _citySearching = false);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -88,6 +137,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'home_city_id': _homeCityId,
         'taste_tags': _tasteTags,
         'taste_personality': personality,
+        'banner_style': _bannerStyle,
       };
       if (_newAvatar != null) {
         patch['avatar_url'] = await uploader.uploadImage(
@@ -135,6 +185,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
       _favoriteCuisine.text =
           (profile.tastePersonality['favorite_cuisine'] as String?) ?? '';
+      _bannerStyle = profile.bannerStyle;
     }
     final cities = ref.watch(citiesProvider).value ?? [];
     final theme = Theme.of(context);
@@ -203,6 +254,60 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: WbSpacing.md),
           Text('Home city', style: theme.textTheme.labelLarge),
+          Text(
+            'Search any city in the world, or pick a popular one below.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: WbSpacing.xs),
+          TextField(
+            controller: _citySearch,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.travel_explore),
+              hintText: 'Search cities worldwide',
+              suffixIcon: _citySearching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
+            ),
+            onChanged: _onCitySearchChanged,
+          ),
+          for (final a in _cityResults)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.location_city_outlined),
+              title: Text(a['name'] as String? ?? ''),
+              subtitle: a['country'] != null
+                  ? Text(a['country'] as String)
+                  : null,
+              onTap: () => setState(() {
+                _homeCityId = a['city_id'] as String;
+                _homeCityLabel =
+                    '${a['name']}${a['country'] != null ? ', ${a['country']}' : ''}';
+                _cityResults = [];
+                _citySearch.clear();
+              }),
+            ),
+          if (_homeCityLabel != null && !cities.any((c) => c.id == _homeCityId))
+            Padding(
+              padding: const EdgeInsets.only(top: WbSpacing.xs),
+              child: InputChip(
+                avatar: const Icon(Icons.place_outlined, size: 16),
+                label: Text(_homeCityLabel!),
+                selected: true,
+                onDeleted: () => setState(() {
+                  _homeCityId = null;
+                  _homeCityLabel = null;
+                }),
+              ),
+            ),
           const SizedBox(height: WbSpacing.xs),
           Wrap(
             spacing: WbSpacing.sm,
@@ -212,7 +317,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ChoiceChip(
                   label: Text(city.name),
                   selected: _homeCityId == city.id,
-                  onSelected: (_) => setState(() => _homeCityId = city.id),
+                  onSelected: (_) => setState(() {
+                    _homeCityId = city.id;
+                    _homeCityLabel = null;
+                  }),
+                ),
+            ],
+          ),
+          const SizedBox(height: WbSpacing.lg),
+          Text('Profile banner', style: theme.textTheme.labelLarge),
+          Text(
+            'Shown when you have no cover photo.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: WbSpacing.xs),
+          Wrap(
+            spacing: WbSpacing.sm,
+            children: [
+              for (final style in kBannerStyles)
+                BannerStyleSwatch(
+                  style: style,
+                  selected: _bannerStyle == style,
+                  onTap: () => setState(() => _bannerStyle = style),
                 ),
             ],
           ),

@@ -73,9 +73,10 @@ class ProfileHeader extends ConsumerWidget {
                     ? CachedNetworkImage(
                         imageUrl: profile.headerUrl!,
                         fit: BoxFit.cover,
-                        errorWidget: (_, _, _) => const _BrandBanner(),
+                        errorWidget: (_, _, _) =>
+                            _BrandBanner(style: profile.bannerStyle),
                       )
-                    : const _BrandBanner(),
+                    : _BrandBanner(style: profile.bannerStyle),
               ),
               Positioned(
                 left: WbSpacing.md,
@@ -209,23 +210,84 @@ class ProfileHeader extends ConsumerWidget {
   }
 }
 
-/// Fallback cover: a quiet voyage-teal wash with a faint scatter of food
-/// glyphs. Branded, restrained, and identical for everyone without a photo.
+/// The selectable preset cover styles. Order here is display order in the
+/// edit screen; every pair keeps the faint glyph texture readable.
+const kBannerStyles = ['voyage', 'ember', 'gold', 'aqua', 'night'];
+
+({Color a, Color b}) bannerPalette(String style) => switch (style) {
+  'ember' => (a: const Color(0xFFB3402A), b: WbColors.ember),
+  'gold' => (a: const Color(0xFF9A6A0F), b: WbColors.warning),
+  'aqua' => (a: const Color(0xFF2E6E75), b: const Color(0xFF6FA8AD)),
+  'night' => (a: WbColors.nightSurface, b: const Color(0xFF34413B)),
+  _ => (a: WbColors.voyage, b: WbColors.voyageLight),
+};
+
+/// Fallback cover: a quiet brand wash in the user's chosen style with a faint
+/// scatter of food glyphs. Branded and restrained, never a gray hole.
 class _BrandBanner extends StatelessWidget {
-  const _BrandBanner();
+  const _BrandBanner({required this.style});
+
+  final String style;
 
   @override
   Widget build(BuildContext context) {
+    final palette = bannerPalette(style);
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [WbColors.voyage, WbColors.voyageLight],
+          colors: [palette.a, palette.b],
         ),
       ),
       child: ClipRect(
         child: CustomPaint(painter: _GlyphPainter(), size: Size.infinite),
+      ),
+    );
+  }
+}
+
+/// Small swatch used by the edit screen to preview a banner style.
+class BannerStyleSwatch extends StatelessWidget {
+  const BannerStyleSwatch({
+    super.key,
+    required this.style,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String style;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = bannerPalette(style);
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Banner style $style',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(WbRadius.chip),
+        child: Container(
+          width: 56,
+          height: 36,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [palette.a, palette.b]),
+            borderRadius: BorderRadius.circular(WbRadius.chip),
+            border: Border.all(
+              width: selected ? 2.5 : 1,
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+            ),
+          ),
+          child: selected
+              ? const Icon(Icons.check, size: 18, color: Colors.white)
+              : null,
+        ),
       ),
     );
   }

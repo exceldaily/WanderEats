@@ -22,6 +22,7 @@ abstract class Profile with _$Profile {
     @Default(<String>[])
     List<String> favoriteCuisines,
     @JsonKey(name: 'taste_tags') @Default(<String>[]) List<String> tasteTags,
+    @JsonKey(name: 'banner_style') @Default('voyage') String bannerStyle,
     @JsonKey(name: 'taste_personality')
     @Default(<String, dynamic>{})
     Map<String, dynamic> tastePersonality,

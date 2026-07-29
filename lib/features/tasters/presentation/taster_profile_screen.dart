@@ -21,6 +21,7 @@ import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../data/taster_repository.dart';
 import 'follow_providers.dart';
+import 'widgets/mutual_taste_card.dart';
 
 final tasterProfileProvider = FutureProvider.autoDispose
     .family<Profile?, String>(
@@ -133,6 +134,8 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                               personality: p.tastePersonality,
                             ),
                           ],
+                          if (!isMe && ref.watch(isSignedInProvider))
+                            MutualTasteCard(tasterId: p.id),
                           const SizedBox(height: WbSpacing.lg),
                           Text(
                             'Food map',
