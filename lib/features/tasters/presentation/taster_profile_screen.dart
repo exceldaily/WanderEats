@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/configuration/env.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../map/presentation/map_controller.dart';
@@ -387,7 +388,7 @@ class _PersonalMap extends ConsumerWidget {
                         color: theme.colorScheme.surfaceContainerHighest,
                         child: Center(
                           child: Text(
-                            '${filtered.length} places '
+                            '${countOf(filtered.length, 'place')} '
                             '(map needs an API key)',
                           ),
                         ),

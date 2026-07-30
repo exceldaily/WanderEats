@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_photo.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/data/restaurant_repository.dart';
@@ -33,13 +34,20 @@ class RestaurantPreviewCard extends ConsumerWidget {
     final summary = ref.watch(_summaryProvider(marker.id));
     final saved = (ref.watch(savedIdsProvider).value ?? {}).contains(marker.id);
 
+    // The sheet is a fixed fraction of the screen, but its content is not: a
+    // place with no recommendations has no "Recommended by" row and no quote,
+    // so a one-size-fits-all resting height left a dead band above the bottom
+    // nav. recCount is known before the summary loads, so pick the height for
+    // the content that is actually coming.
+    final resting = marker.recCount == 0 ? 0.26 : 0.42;
+
     return DraggableScrollableSheet(
       key: ValueKey(marker.id),
-      initialChildSize: 0.32,
+      initialChildSize: resting,
       minChildSize: 0.18,
       maxChildSize: 0.85,
       snap: true,
-      snapSizes: const [0.18, 0.32, 0.85],
+      snapSizes: [0.18, resting, 0.85],
       builder: (context, scrollController) {
         return Material(
           color: theme.colorScheme.surfaceContainerLow,
@@ -98,7 +106,7 @@ class RestaurantPreviewCard extends ConsumerWidget {
                                 '${(marker.distanceM! / 1000).toStringAsFixed(1)} km',
                               if (marker.score != null)
                                 '${marker.score!.toStringAsFixed(1)}/10',
-                              '${marker.recCount} recs',
+                              countOf(marker.recCount, 'rec'),
                             ].join(' · '),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,

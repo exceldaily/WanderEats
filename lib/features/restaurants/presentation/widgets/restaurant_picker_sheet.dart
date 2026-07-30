@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/wb_tokens.dart';
+import '../../../../core/utils/plural.dart';
 import '../../../authentication/presentation/auth_providers.dart';
 import '../../data/restaurant_repository.dart';
 import '../../domain/restaurant.dart';
@@ -175,7 +176,7 @@ class _PickerSheetState extends ConsumerState<_PickerSheet> {
       itemBuilder: (context, i) => ListTile(
         leading: const Icon(Icons.restaurant),
         title: Text(_results[i].name),
-        subtitle: Text('${_results[i].recCount} recommendations'),
+        subtitle: Text(countOf(_results[i].recCount, 'recommendation')),
         onTap: () => Navigator.pop(context, _results[i]),
       ),
     );

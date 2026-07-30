@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../map/presentation/map_controller.dart';
 import '../data/discovery_repository.dart';
@@ -333,7 +334,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               leading: const Icon(Icons.restaurant),
               title: Text(r['name'] as String),
               subtitle: Text(
-                '${r['city_name']} · ${r['rec_count']} recommendations',
+                '${r['city_name']} · ${countOfDynamic(r['rec_count'], 'recommendation')}',
               ),
               onTap: () => context.pushNamed(
                 Routes.restaurant,
@@ -367,7 +368,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ListTile(
               leading: const Icon(Icons.playlist_play),
               title: Text(l['title'] as String),
-              subtitle: Text('${l['restaurant_count']} places'),
+              subtitle: Text(countOfDynamic(l['restaurant_count'], 'place')),
               onTap: () => context.pushNamed(
                 Routes.list,
                 pathParameters: {'id': l['id'] as String},

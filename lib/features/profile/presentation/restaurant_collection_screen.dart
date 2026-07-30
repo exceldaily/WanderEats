@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/data/restaurant_repository.dart';
 import '../../restaurants/domain/restaurant.dart';
@@ -65,7 +66,7 @@ class RestaurantCollectionScreen extends ConsumerWidget {
                       subtitle: Text(
                         [
                           if (r.priceLevel != null) '\$' * r.priceLevel!,
-                          '${r.recCount} recs',
+                          countOf(r.recCount, 'rec'),
                           if (r.score != null)
                             '${r.score!.toStringAsFixed(1)}/10',
                         ].join(' · '),

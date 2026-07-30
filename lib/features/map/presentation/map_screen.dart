@@ -10,6 +10,7 @@ import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/domain/restaurant.dart';
 import '../../restaurants/presentation/restaurant_actions.dart';
@@ -160,7 +161,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     snippet: [
                       if (savedIds.contains(m.id)) 'Saved',
                       if (visitedIds.contains(m.id)) 'Visited',
-                      '${m.recCount} recs',
+                      countOf(m.recCount, 'rec'),
                     ].join(' · '),
                   ),
                   onTap: () {
@@ -392,7 +393,7 @@ class _ListRow extends StatelessWidget {
         subtitle: Text(
           [
             if (marker.priceLevel != null) '\$' * marker.priceLevel!,
-            '${marker.recCount} recommendations',
+            countOf(marker.recCount, 'recommendation'),
             if (marker.score != null) '${marker.score!.toStringAsFixed(1)}/10',
           ].join(' · '),
         ),

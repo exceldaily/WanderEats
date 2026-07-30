@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_photo.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
@@ -173,8 +174,8 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                           [
                             if (r.score != null)
                               'Score ${r.score!.toStringAsFixed(1)}/10',
-                            '${r.recCount} recommendations',
-                            '${r.saveCount} saves',
+                            countOf(r.recCount, 'recommendation'),
+                            countOf(r.saveCount, 'save'),
                           ].join(' · '),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,

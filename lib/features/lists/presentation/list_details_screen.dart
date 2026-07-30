@@ -12,6 +12,7 @@ import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../restaurants/presentation/widgets/restaurant_picker_sheet.dart';
@@ -128,8 +129,8 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                       Text(
                         [
                           'by @${l.owner?['username'] ?? 'unknown'}',
-                          '${places.value?.length ?? '-'} places',
-                          '${meta?['followers'] ?? '-'} followers',
+                          places.value == null ? '- places' : countOf(places.value!.length, 'place'),
+                          meta?['followers'] == null ? '- followers' : countOfDynamic(meta!['followers'], 'follower'),
                           '${meta?['likes'] ?? '-'} likes',
                           if (l.isCollaborative) 'collaborative',
                           if (l.visibility == 'private') 'private',
@@ -404,7 +405,7 @@ class _EntryTile extends StatelessWidget {
       title: Text(place.marker.name),
       subtitle: place.note != null
           ? Text(place.note!)
-          : Text('${place.marker.recCount} recommendations'),
+          : Text(countOf(place.marker.recCount, 'recommendation')),
       trailing: onRemove != null
           ? IconButton(
               tooltip: 'Remove',
@@ -438,7 +439,7 @@ class _ListMap extends StatelessWidget {
           child: Text(
             items.isEmpty
                 ? 'No places yet'
-                : '${items.length} places (map needs an API key)',
+                : '${countOf(items.length, 'place')} (map needs an API key)',
           ),
         ),
       );

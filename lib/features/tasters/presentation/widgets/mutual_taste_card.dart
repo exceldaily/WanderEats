@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../../app/theme/wb_tokens.dart';
 import '../../../../core/networking/supabase_provider.dart';
+import '../../../../core/utils/plural.dart';
 import '../../../profile/presentation/widgets/taste_tags.dart';
 
 /// Real overlap between the signed-in viewer and this profile, computed
@@ -57,7 +58,7 @@ class MutualTasteCard extends ConsumerWidget {
           Icons.rate_review_outlined,
           savedTheirRecs == 1
               ? 'You saved a place they recommend'
-              : 'You saved $savedTheirRecs places they recommend',
+              : 'You saved ${countOf(savedTheirRecs, 'place')} they recommend',
         ),
     ];
 

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
+import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../lists/data/list_repository.dart';
@@ -168,7 +169,7 @@ class _ForYouTab extends ConsumerWidget {
                                 style: theme.textTheme.labelMedium,
                               ),
                               Text(
-                                '${t['followers']} followers',
+                                countOfDynamic(t['followers'], 'follower'),
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -222,7 +223,7 @@ class _ForYouTab extends ConsumerWidget {
                             subtitle: Text(
                               [
                                 if (r.priceLevel != null) '\$' * r.priceLevel!,
-                                '${r.recCount} recs',
+                                countOf(r.recCount, 'rec'),
                                 if (r.score != null)
                                   '${r.score!.toStringAsFixed(1)}/10',
                               ].join(' · '),
