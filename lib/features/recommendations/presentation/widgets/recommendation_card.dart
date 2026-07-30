@@ -333,6 +333,18 @@ class RecommendationCard extends ConsumerWidget {
                     onPressed: () => _rate(context, ref),
                     child: const Text('Rate it'),
                   ),
+                // Your own recommendation is editable in place. Without this
+                // a typo could only be fixed by deleting and reposting, which
+                // loses the photos and the accuracy ratings it has collected.
+                if (isMine)
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 15),
+                    label: const Text('Edit'),
+                    onPressed: () => _edit(context, ref),
+                  ),
                 if (mine != null)
                   Padding(
                     padding: const EdgeInsets.only(left: WbSpacing.sm),
@@ -349,6 +361,19 @@ class RecommendationCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Opens the edit form. On a successful save the surrounding lists are
+  /// invalidated so the change is visible immediately rather than after a
+  /// manual refresh.
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final saved = await context.pushNamed<bool>(
+      Routes.editRecommendation,
+      pathParameters: {'id': recommendation.id},
+    );
+    if (saved == true) {
+      ref.invalidate(_feedbackProvider(recommendation.id));
+    }
   }
 
   Future<void> _rate(BuildContext context, WidgetRef ref) async {

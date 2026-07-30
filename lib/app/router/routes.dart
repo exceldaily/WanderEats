@@ -22,6 +22,7 @@ abstract final class Routes {
   static const list = 'list';
   static const listEdit = 'list-edit';
   static const createRecommendation = 'create-recommendation';
+  static const editRecommendation = 'edit-recommendation';
   static const createList = 'create-list';
   static const search = 'search';
   static const biteswipe = 'biteswipe';

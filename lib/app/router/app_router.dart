@@ -23,6 +23,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/restaurant_collection_screen.dart';
 import '../../features/recommendations/presentation/create_menu_screen.dart';
 import '../../features/recommendations/presentation/create_recommendation_screen.dart';
+import '../../features/recommendations/presentation/edit_recommendation_loader.dart';
 import '../../features/restaurants/presentation/restaurant_details_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
@@ -156,6 +157,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.createRecommendation,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const CreateRecommendationScreen(),
+      ),
+      // Editing takes an id and loads the recommendation itself, rather than
+      // being handed the object, so the route survives a deep link or a cold
+      // start.
+      GoRoute(
+        path: '/recommendation/:id/edit',
+        name: Routes.editRecommendation,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, state) => EditRecommendationLoader(
+          recommendationId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: '/create/list',

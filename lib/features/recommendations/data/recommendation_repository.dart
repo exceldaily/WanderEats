@@ -102,6 +102,77 @@ class RecommendationRepository {
     }
   }
 
+  /// One recommendation with its joins, for the edit screen.
+  Future<Recommendation> byId(String id) async {
+    try {
+      final row = await _schema
+          .from('recommendations')
+          .select(_select)
+          .eq('id', id)
+          .isFilter('deleted_at', null)
+          .single();
+      return Recommendation.fromJson(row);
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
+  /// Edits an existing recommendation. RLS already restricts updates to the
+  /// owner, so a wrong id fails at the database rather than here.
+  ///
+  /// [photoUrls] null means "leave the photos alone"; a list means "these are
+  /// now the photos", including an empty list to remove them all. Editing text
+  /// is the common case and must not silently drop the pictures.
+  Future<void> update({
+    required String id,
+    required String body,
+    String? whatToOrder,
+    int? priceImpression,
+    DateTime? visitedOn,
+    String visibility = 'public',
+    List<String>? photoUrls,
+  }) async {
+    try {
+      await _schema
+          .from('recommendations')
+          .update({
+            'body': body,
+            'what_to_order': (whatToOrder == null || whatToOrder.isEmpty)
+                ? null
+                : whatToOrder,
+            'price_impression': priceImpression,
+            'visited_on': visitedOn?.toIso8601String().substring(0, 10),
+            'visibility': visibility,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', id);
+
+      if (photoUrls != null) {
+        await _schema
+            .from('recommendation_photos')
+            .delete()
+            .eq('recommendation_id', id);
+        if (photoUrls.isNotEmpty) {
+          await _schema.from('recommendation_photos').insert([
+            for (var i = 0; i < photoUrls.length; i++)
+              {
+                'recommendation_id': id,
+                'storage_path': photoUrls[i],
+                'position': i,
+              },
+          ]);
+        }
+      }
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw const PermissionDeniedException(
+          'You can only edit your own recommendations.',
+        );
+      }
+      throw ServerException(cause: e);
+    }
+  }
+
   /// Server-side badge evaluation for the current user. Returns names of any
   /// newly awarded badges.
   Future<List<String>> awardBadges() async {
