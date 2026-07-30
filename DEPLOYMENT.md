@@ -108,6 +108,26 @@ All copy, data-safety answers and the content-rating questionnaire are in
 - Feature graphic: `branding/feature_graphic.png` (1024×500)
 - Screenshots: capture list is in STORE_LISTING.md
 
+### Capturing screenshots
+
+Shoot them off a real phone running the **release** APK, not a debug build —
+the release build is what has the final icon, and the map only renders on a
+build signed with a registered SHA-1.
+
+```
+flutter build apk --release
+pwsh tool/capture_screenshots.ps1 -Install       # sideload, then shot 1
+pwsh tool/capture_screenshots.ps1 -Shot 2        # navigate first, then run
+```
+
+The script pulls the current screen over adb, names it after the shot list,
+and checks it against Play's size and aspect limits before you find out from a
+rejected listing. `-List` prints the shot order. Output lands in
+`store/screenshots/`.
+
+Play needs a minimum of 2. Shot 1 is the one that sells the app, so make it the
+map with a preview card open.
+
 ## Public site
 
 `web/` is a static site on Vercel (project `wanderbites`, free tier) that
