@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/auth_repository.dart';
 
 /// First screen for signed-out users: brand moment + auth choices.
@@ -14,6 +15,7 @@ class WelcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -34,7 +36,7 @@ class WelcomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: WbSpacing.sm),
               Text(
-                'Follow people with great taste.\nDiscover unforgettable places.',
+                l10n.welcomeTagline,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -54,22 +56,22 @@ class WelcomeScreen extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text('Continue with Google'),
+                label: Text(l10n.continueWithGoogle),
               ),
               const SizedBox(height: WbSpacing.sm),
               FilledButton.tonal(
                 onPressed: () => context.goNamed(Routes.register),
-                child: const Text('Sign up with email'),
+                child: Text(l10n.signUpWithEmail),
               ),
               const SizedBox(height: WbSpacing.sm),
               OutlinedButton(
                 onPressed: () => context.goNamed(Routes.signIn),
-                child: const Text('I already have an account'),
+                child: Text(l10n.alreadyHaveAccount),
               ),
               const SizedBox(height: WbSpacing.md),
               TextButton(
                 onPressed: () => context.goNamed(Routes.map),
-                child: const Text('Just browsing for now'),
+                child: Text(l10n.justBrowsing),
               ),
             ],
           ),

@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
 
@@ -76,6 +78,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
 # App icon generation. Every layer below is derived by tool/generate_icons.py
 # from the single source file branding/source/wanderbites_globe.png, so

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../profile/data/profile_repository.dart';
@@ -37,68 +38,69 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider).value;
+    final l10n = AppLocalizations.of(context);
     bool flag(String key, [bool fallback = true]) =>
         (settings?[key] as bool?) ?? fallback;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: settings == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.symmetric(vertical: WbSpacing.sm),
               children: [
-                const _Header('Notifications'),
+                _Header(l10n.settingsNotifications),
                 SwitchListTile(
-                  title: const Text('Push notifications'),
+                  title: Text(l10n.settingsPushNotifications),
                   value: flag('push_enabled'),
                   onChanged: (v) => _update(ref, 'push_enabled', v),
                 ),
                 SwitchListTile(
-                  title: const Text('New followers'),
+                  title: Text(l10n.settingsNewFollowers),
                   value: flag('notif_follows'),
                   onChanged: (v) => _update(ref, 'notif_follows', v),
                 ),
                 SwitchListTile(
-                  title: const Text('Comments'),
+                  title: Text(l10n.settingsComments),
                   value: flag('notif_comments'),
                   onChanged: (v) => _update(ref, 'notif_comments', v),
                 ),
                 SwitchListTile(
-                  title: const Text('List activity'),
+                  title: Text(l10n.settingsListActivity),
                   value: flag('notif_list_activity'),
                   onChanged: (v) => _update(ref, 'notif_list_activity', v),
                 ),
                 SwitchListTile(
-                  title: const Text('Taster activity'),
+                  title: Text(l10n.settingsTasterActivity),
                   value: flag('notif_taster_activity'),
                   onChanged: (v) => _update(ref, 'notif_taster_activity', v),
                 ),
                 SwitchListTile(
-                  title: const Text('Badge unlocks'),
+                  title: Text(l10n.settingsBadgeUnlocks),
                   value: flag('notif_badges'),
                   onChanged: (v) => _update(ref, 'notif_badges', v),
                 ),
-                const _Header('Privacy'),
+                _Header(l10n.settingsPrivacy),
                 SwitchListTile(
-                  title: const Text('Public profile'),
-                  subtitle: const Text('Others can view your profile and maps'),
+                  title: Text(l10n.settingsPublicProfile),
+                  subtitle: Text(l10n.settingsPublicProfileSubtitle),
                   value: flag('profile_public'),
                   onChanged: (v) => _update(ref, 'profile_public', v),
                 ),
                 SwitchListTile(
-                  title: const Text('Show visited places publicly'),
+                  title: Text(l10n.settingsShowVisitedPublicly),
                   value: flag('show_visited_publicly'),
                   onChanged: (v) => _update(ref, 'show_visited_publicly', v),
                 ),
-                const _Header('Account'),
+                _Header(l10n.settingsAccount),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Edit profile'),
+                  title: Text(l10n.settingsEditProfile),
                   onTap: () => context.pushNamed(Routes.editProfile),
                 ),
                 ListTile(
                   leading: const Icon(Icons.logout),
-                  title: const Text('Sign out'),
+                  title: Text(l10n.settingsSignOut),
                   onTap: () async {
                     await ref.read(authRepositoryProvider).signOut();
                     if (context.mounted) context.goNamed(Routes.welcome);
@@ -110,26 +112,24 @@ class SettingsScreen extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   title: Text(
-                    'Delete account',
+                    l10n.settingsDeleteAccount,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
-                  subtitle: const Text(
-                    'Removes your WanderBites profile, recommendations, lists and photos',
-                  ),
+                  subtitle: Text(l10n.settingsDeleteAccountSubtitle),
                   onTap: () => _confirmDelete(context, ref),
                 ),
-                const _Header('About'),
+                _Header(l10n.settingsAbout),
                 ListTile(
                   leading: const Icon(Icons.policy_outlined),
-                  title: const Text('Privacy policy'),
+                  title: Text(l10n.settingsPrivacyPolicy),
                   trailing: const Icon(Icons.open_in_new, size: 18),
                   onTap: () => _openSite('/privacy'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.help_outline),
-                  title: const Text('How account deletion works'),
+                  title: Text(l10n.settingsDeletionHowItWorks),
                   trailing: const Icon(Icons.open_in_new, size: 18),
                   onTap: () => _openSite('/delete-account'),
                 ),
@@ -146,24 +146,23 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete your account?'),
-        content: const Text(
-          'This permanently removes your WanderBites profile and everything you have published. This cannot be undone.',
-        ),
+        title: Text(l10n.deleteAccountDialogTitle),
+        content: Text(l10n.deleteAccountDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete forever'),
+            child: Text(l10n.deleteForever),
           ),
         ],
       ),

@@ -1,0 +1,43 @@
+{
+  "@@locale": "en",
+  "welcomeTagline": "Follow people with great taste.\nDiscover unforgettable places.",
+  "@welcomeTagline": {
+    "description": "Tagline under the WanderBites wordmark on the welcome screen."
+  },
+  "continueWithGoogle": "Continue with Google",
+  "signUpWithEmail": "Sign up with email",
+  "alreadyHaveAccount": "I already have an account",
+  "justBrowsing": "Just browsing for now",
+
+  "navMap": "Map",
+  "navDiscover": "Discover",
+  "navCreate": "Create",
+  "navActivity": "Activity",
+  "navProfile": "Profile",
+
+  "settingsTitle": "Settings",
+  "settingsNotifications": "Notifications",
+  "settingsPushNotifications": "Push notifications",
+  "settingsNewFollowers": "New followers",
+  "settingsComments": "Comments",
+  "settingsListActivity": "List activity",
+  "settingsTasterActivity": "Taster activity",
+  "settingsBadgeUnlocks": "Badge unlocks",
+  "settingsPrivacy": "Privacy",
+  "settingsPublicProfile": "Public profile",
+  "settingsPublicProfileSubtitle": "Others can view your profile and maps",
+  "settingsShowVisitedPublicly": "Show visited places publicly",
+  "settingsAccount": "Account",
+  "settingsEditProfile": "Edit profile",
+  "settingsSignOut": "Sign out",
+  "settingsDeleteAccount": "Delete account",
+  "settingsDeleteAccountSubtitle": "Removes your WanderBites profile, recommendations, lists and photos",
+  "settingsAbout": "About",
+  "settingsPrivacyPolicy": "Privacy policy",
+  "settingsDeletionHowItWorks": "How account deletion works",
+
+  "deleteAccountDialogTitle": "Delete your account?",
+  "deleteAccountDialogBody": "This permanently removes your WanderBites profile and everything you have published. This cannot be undone.",
+  "cancel": "Cancel",
+  "deleteForever": "Delete forever"
+}

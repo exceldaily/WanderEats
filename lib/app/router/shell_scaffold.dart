@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Persistent bottom navigation around the five tab branches.
 /// IndexedStack in StatefulShellRoute preserves each tab's state.
 class ShellScaffold extends StatelessWidget {
@@ -11,6 +13,7 @@ class ShellScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: shell,
       bottomNavigationBar: NavigationBar(
@@ -18,17 +21,17 @@ class ShellScaffold extends StatelessWidget {
         onDestinationSelected: (index) =>
             shell.goBranch(index, initialLocation: index == shell.currentIndex),
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
-            tooltip: 'Map',
+          NavigationDestination(
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map),
+            label: l10n.navMap,
+            tooltip: l10n.navMap,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Discover',
-            tooltip: 'Discover',
+          NavigationDestination(
+            icon: const Icon(Icons.explore_outlined),
+            selectedIcon: const Icon(Icons.explore),
+            label: l10n.navDiscover,
+            tooltip: l10n.navDiscover,
           ),
           NavigationDestination(
             // The create action gets stronger visual emphasis: filled circle.
@@ -37,20 +40,20 @@ class ShellScaffold extends StatelessWidget {
               backgroundColor: scheme.secondary,
               child: const Icon(Icons.add, size: 20, color: Colors.white),
             ),
-            label: 'Create',
-            tooltip: 'Create',
+            label: l10n.navCreate,
+            tooltip: l10n.navCreate,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
-            label: 'Activity',
-            tooltip: 'Notifications',
+          NavigationDestination(
+            icon: const Icon(Icons.notifications_outlined),
+            selectedIcon: const Icon(Icons.notifications),
+            label: l10n.navActivity,
+            tooltip: l10n.navActivity,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-            tooltip: 'Profile',
+          NavigationDestination(
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: l10n.navProfile,
+            tooltip: l10n.navProfile,
           ),
         ],
       ),

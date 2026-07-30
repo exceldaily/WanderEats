@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import 'configuration/env.dart';
 import 'router/app_router.dart';
 import 'theme/wb_theme.dart';
@@ -27,6 +29,17 @@ class WanderBitesApp extends ConsumerWidget {
       darkTheme: WbTheme.dark(),
       themeMode: ThemeMode.system,
       routerConfig: router,
+      // Thai is the flagship first language: WanderBites' own seed data and
+      // early content are Thailand-based, so it is where translation pays
+      // off before any other locale does. More locales are additive from
+      // here - add the delegate list is fixed, only supportedLocales grows.
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }
