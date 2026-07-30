@@ -59,6 +59,101 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
     super.dispose();
   }
 
+  Future<void> _rename(FoodList list) async {
+    final title = TextEditingController(text: list.title);
+    final description = TextEditingController(text: list.description ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename list'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: title,
+              autofocus: true,
+              maxLength: 80,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            TextField(
+              controller: description,
+              maxLength: 200,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    final newTitle = title.text.trim();
+    title.dispose();
+    final newDescription = description.text.trim();
+    description.dispose();
+    if (saved != true || newTitle.isEmpty) return;
+
+    try {
+      await ref.read(listRepositoryProvider).update(widget.listId, {
+        'title': newTitle,
+        'description': newDescription.isEmpty ? null : newDescription,
+      });
+      ref.invalidate(listProvider(widget.listId));
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(FoodList list) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete "${list.title}"?'),
+        content: const Text(
+          'The list is removed for everyone following it. The restaurants '
+          'themselves are not affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(listRepositoryProvider).softDelete(widget.listId);
+      if (mounted) context.pop();
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -103,6 +198,35 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                     icon: Icon(_mapView ? Icons.list : Icons.map_outlined),
                     onPressed: () => setState(() => _mapView = !_mapView),
                   ),
+                  // Owners could add and reorder places but never rename or
+                  // delete the list itself, which left create as a one-way
+                  // door. Both repository calls already existed.
+                  if (isOwner)
+                    PopupMenuButton<String>(
+                      tooltip: 'List options',
+                      onSelected: (value) async {
+                        if (value == 'rename') await _rename(l);
+                        if (value == 'delete') await _confirmDelete(l);
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Rename list'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            leading: Icon(Icons.delete_outline),
+                            title: Text('Delete list'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(
