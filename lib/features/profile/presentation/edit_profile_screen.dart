@@ -63,7 +63,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String? _homeCityLabel;
   List<Map<String, dynamic>> _cityResults = [];
   bool _citySearching = false;
-  String _bannerStyle = 'voyage';
+  String _bannerDesign = 'classic';
+  String _bannerColor = 'voyage';
   File? _newAvatar;
   File? _newHeader;
   bool _busy = false;
@@ -137,7 +138,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'home_city_id': _homeCityId,
         'taste_tags': _tasteTags,
         'taste_personality': personality,
-        'banner_style': _bannerStyle,
+        'banner_style': composeBannerStyle(_bannerDesign, _bannerColor),
       };
       if (_newAvatar != null) {
         patch['avatar_url'] = await uploader.uploadImage(
@@ -185,7 +186,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
       _favoriteCuisine.text =
           (profile.tastePersonality['favorite_cuisine'] as String?) ?? '';
-      _bannerStyle = profile.bannerStyle;
+      final parsedBanner = parseBannerStyle(profile.bannerStyle);
+      _bannerDesign = parsedBanner.design;
+      _bannerColor = parsedBanner.color;
     }
     final cities = ref.watch(citiesProvider).value ?? [];
     final theme = Theme.of(context);
@@ -326,21 +329,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: WbSpacing.lg),
           Text('Profile banner', style: theme.textTheme.labelLarge),
-          Text(
-            'Shown when you have no cover photo.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
           const SizedBox(height: WbSpacing.xs),
           Wrap(
             spacing: WbSpacing.sm,
+            runSpacing: WbSpacing.sm,
             children: [
-              for (final style in kBannerStyles)
-                BannerStyleSwatch(
-                  style: style,
-                  selected: _bannerStyle == style,
-                  onTap: () => setState(() => _bannerStyle = style),
+              for (final design in kBannerDesigns)
+                BannerDesignSwatch(
+                  design: design,
+                  color: _bannerColor,
+                  selected: _bannerDesign == design,
+                  onTap: () => setState(() => _bannerDesign = design),
+                ),
+            ],
+          ),
+          const SizedBox(height: WbSpacing.sm),
+          Wrap(
+            spacing: WbSpacing.sm,
+            children: [
+              for (final color in kBannerColors)
+                BannerColorSwatch(
+                  color: color,
+                  selected: _bannerColor == color,
+                  onTap: () => setState(() => _bannerColor = color),
                 ),
             ],
           ),

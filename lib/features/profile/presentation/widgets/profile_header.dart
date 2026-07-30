@@ -74,9 +74,9 @@ class ProfileHeader extends ConsumerWidget {
                         imageUrl: profile.headerUrl!,
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) =>
-                            _BrandBanner(style: profile.bannerStyle),
+                            _BrandBanner(bannerStyle: profile.bannerStyle),
                       )
-                    : _BrandBanner(style: profile.bannerStyle),
+                    : _BrandBanner(bannerStyle: profile.bannerStyle),
               ),
               Positioned(
                 left: WbSpacing.md,
@@ -218,28 +218,88 @@ class ProfileHeader extends ConsumerWidget {
   }
 }
 
-/// The selectable preset cover styles. Order here is display order in the
-/// edit screen; every pair keeps the faint glyph texture readable.
-const kBannerStyles = ['voyage', 'ember', 'gold', 'aqua', 'night'];
+/// The selectable color palettes. Order here is display order in the edit
+/// screen; every pair keeps the faint glyph texture readable.
+const kBannerColors = [
+  'voyage',
+  'ember',
+  'gold',
+  'aqua',
+  'night',
+  'berry',
+  'herb',
+  'sunset',
+];
 
-({Color a, Color b}) bannerPalette(String style) => switch (style) {
+({Color a, Color b}) bannerPalette(String color) => switch (color) {
   'ember' => (a: const Color(0xFFB3402A), b: WbColors.ember),
   'gold' => (a: const Color(0xFF9A6A0F), b: WbColors.warning),
   'aqua' => (a: const Color(0xFF2E6E75), b: const Color(0xFF6FA8AD)),
   'night' => (a: WbColors.nightSurface, b: const Color(0xFF34413B)),
+  'berry' => (a: const Color(0xFF6B2D5C), b: const Color(0xFFB5507E)),
+  'herb' => (a: const Color(0xFF3D6B3F), b: const Color(0xFF6FA05A)),
+  'sunset' => (a: const Color(0xFFB3521E), b: const Color(0xFFE8935A)),
   _ => (a: WbColors.voyage, b: WbColors.voyageLight),
 };
 
-/// Fallback cover: a quiet brand wash in the user's chosen style with a faint
-/// scatter of food glyphs. Branded and restrained, never a gray hole.
-class _BrandBanner extends StatelessWidget {
-  const _BrandBanner({required this.style});
+/// The selectable banner patterns. Each pairs with any of [kBannerColors], so
+/// "design" and "color" are independent choices, not one combined list.
+const kBannerDesigns = ['classic', 'ice_cream', 'bbq', 'coffee', 'pizza'];
 
-  final String style;
+String bannerDesignLabel(String design) => switch (design) {
+  'ice_cream' => 'Ice cream',
+  'bbq' => 'BBQ',
+  'coffee' => 'Coffee',
+  'pizza' => 'Pizza',
+  _ => 'Classic',
+};
+
+List<IconData> _bannerGlyphs(String design) => switch (design) {
+  'ice_cream' => const [Icons.icecream, Icons.icecream_outlined, Icons.cake_outlined],
+  'bbq' => const [
+    Icons.kebab_dining_outlined,
+    Icons.local_fire_department,
+    Icons.local_fire_department_outlined,
+  ],
+  'coffee' => const [
+    Icons.emoji_food_beverage_outlined,
+    Icons.bakery_dining_outlined,
+  ],
+  'pizza' => const [Icons.local_pizza_outlined],
+  _ => const [
+    Icons.ramen_dining_outlined,
+    Icons.local_pizza_outlined,
+    Icons.bakery_dining_outlined,
+    Icons.emoji_food_beverage_outlined,
+    Icons.kebab_dining_outlined,
+    Icons.icecream_outlined,
+  ],
+};
+
+/// `banner_style` is stored as `'<design>:<color>'`, e.g. `'bbq:ember'`. Every
+/// row is backfilled to this shape (see migration 0020), so a value with no
+/// colon is unexpected rather than a supported legacy case - it still falls
+/// back safely rather than crashing a profile page over a stray value.
+({String design, String color}) parseBannerStyle(String raw) {
+  final i = raw.indexOf(':');
+  if (i < 0) return (design: 'classic', color: raw);
+  return (design: raw.substring(0, i), color: raw.substring(i + 1));
+}
+
+String composeBannerStyle(String design, String color) => '$design:$color';
+
+/// Fallback cover: a quiet brand wash in the user's chosen color with a faint
+/// scatter of glyphs matching their chosen design. Branded and restrained,
+/// never a gray hole.
+class _BrandBanner extends StatelessWidget {
+  const _BrandBanner({required this.bannerStyle});
+
+  final String bannerStyle;
 
   @override
   Widget build(BuildContext context) {
-    final palette = bannerPalette(style);
+    final parsed = parseBannerStyle(bannerStyle);
+    final palette = bannerPalette(parsed.color);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -249,38 +309,42 @@ class _BrandBanner extends StatelessWidget {
         ),
       ),
       child: ClipRect(
-        child: CustomPaint(painter: _GlyphPainter(), size: Size.infinite),
+        child: CustomPaint(
+          painter: _GlyphPainter(_bannerGlyphs(parsed.design)),
+          size: Size.infinite,
+        ),
       ),
     );
   }
 }
 
-/// Small swatch used by the edit screen to preview a banner style.
-class BannerStyleSwatch extends StatelessWidget {
-  const BannerStyleSwatch({
+/// Color swatch for the edit screen: a solid gradient dot, no pattern - the
+/// pattern is chosen separately via [BannerDesignSwatch].
+class BannerColorSwatch extends StatelessWidget {
+  const BannerColorSwatch({
     super.key,
-    required this.style,
+    required this.color,
     required this.selected,
     required this.onTap,
   });
 
-  final String style;
+  final String color;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final palette = bannerPalette(style);
+    final palette = bannerPalette(color);
     final theme = Theme.of(context);
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Banner style $style',
+      label: 'Banner color $color',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(WbRadius.chip),
         child: Container(
-          width: 56,
+          width: 44,
           height: 36,
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [palette.a, palette.b]),
@@ -301,15 +365,75 @@ class BannerStyleSwatch extends StatelessWidget {
   }
 }
 
+/// Design swatch for the edit screen: renders the actual pattern in the
+/// currently-selected color, so picking a design previews it the way it will
+/// really look rather than as a bare label.
+class BannerDesignSwatch extends StatelessWidget {
+  const BannerDesignSwatch({
+    super.key,
+    required this.design,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String design;
+  final String color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Banner design ${bannerDesignLabel(design)}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(WbRadius.chip),
+        child: Container(
+          width: 76,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(WbRadius.chip),
+            border: Border.all(
+              width: selected ? 2.5 : 1,
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+            ),
+          ),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(WbRadius.chip - 3),
+                child: SizedBox(
+                  height: 40,
+                  child: _BrandBanner(
+                    bannerStyle: composeBannerStyle(design, color),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                bannerDesignLabel(design),
+                style: theme.textTheme.labelSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GlyphPainter extends CustomPainter {
-  static const _glyphs = [
-    Icons.ramen_dining_outlined,
-    Icons.local_pizza_outlined,
-    Icons.bakery_dining_outlined,
-    Icons.emoji_food_beverage_outlined,
-    Icons.kebab_dining_outlined,
-    Icons.icecream_outlined,
-  ];
+  const _GlyphPainter(this.glyphs);
+
+  final List<IconData> glyphs;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -317,7 +441,7 @@ class _GlyphPainter extends CustomPainter {
     var i = 0;
     for (double y = 14; y < size.height; y += 52) {
       for (double x = 18 + (i.isEven ? 0 : 34); x < size.width; x += 72) {
-        final icon = _glyphs[(i + (x ~/ 72)) % _glyphs.length];
+        final icon = glyphs[(i + (x ~/ 72)) % glyphs.length];
         final painter = TextPainter(
           text: TextSpan(
             text: String.fromCharCode(icon.codePoint),
@@ -336,7 +460,8 @@ class _GlyphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GlyphPainter oldDelegate) =>
+      oldDelegate.glyphs != glyphs;
 }
 
 /// Marks a sample account. Deliberately plain and always paired with the word

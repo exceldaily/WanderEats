@@ -28,7 +28,7 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
-  bannerStyle: json['banner_style'] as String? ?? 'voyage',
+  bannerStyle: json['banner_style'] as String? ?? 'classic:voyage',
   tastePersonality:
       json['taste_personality'] as Map<String, dynamic>? ??
       const <String, dynamic>{},
