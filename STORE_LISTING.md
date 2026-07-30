@@ -103,7 +103,8 @@ food, restaurants, travel, map, recommendations, dining
 ## Contact
 
 - Email: exceldaily7@gmail.com
-- Privacy policy URL: *(host PRIVACY.md and put the link here)*
+- Website: https://wanderbites-gamma.vercel.app
+- Privacy policy URL: https://wanderbites-gamma.vercel.app/privacy
 
 ---
 
@@ -128,6 +129,9 @@ food, restaurants, travel, map, recommendations, dining
 
 **Can users request data deletion?** Yes — in-app (Settings → Delete account)
 and by email request.
+
+**Data deletion URL** (Play asks for this separately, under App content →
+Data safety): https://wanderbites-gamma.vercel.app/delete-account
 
 **Committed to the Play Families policy?** No (app is not directed at children)
 

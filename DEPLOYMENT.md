@@ -108,6 +108,28 @@ All copy, data-safety answers and the content-rating questionnaire are in
 - Feature graphic: `branding/feature_graphic.png` (1024×500)
 - Screenshots: capture list is in STORE_LISTING.md
 
+## Public site
+
+`web/` is a static site on Vercel (project `wanderbites`, free tier) that
+exists to satisfy the two URLs Play insists on:
+
+- Privacy policy: https://wanderbites-gamma.vercel.app/privacy
+- Data deletion: https://wanderbites-gamma.vercel.app/delete-account
+
+`PRIVACY.md` and `web/privacy.html` say the same thing; keep them in step.
+Redeploy after editing — the site is deployed from the file tree, not from a
+git integration, so pushing to GitHub alone does not publish it.
+
+## Branding
+
+Every icon layer is derived from one file, `branding/source/wanderbites_globe.png`.
+Replace that and re-run:
+
+```
+python tool/generate_icons.py
+dart run flutter_launcher_icons
+```
+
 ## Release order
 
 1. **Internal testing** first. Verify: map renders (see SHA-1 step above),

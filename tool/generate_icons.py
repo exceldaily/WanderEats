@@ -1,216 +1,197 @@
-"""Generates the WanderBites app icon set from a vector description.
+"""Generates the WanderBites icon set from the globe artwork.
 
-The mark: a dashed travel route tracing "WB" that ends in a map pin — a food
-journey drawn as a map line. Rendered here rather than shipped as a raster so
-every size is drawn at native resolution and stays crisp at 48dp.
+The mark: a globe with a bite taken out of it, an orange dashed travel route
+across the continents, and a map pin where the journey ends. Source art lives
+at branding/source/wanderbites_globe.png on a flat cream field; everything
+here is derived from it so there is exactly one file to replace when the logo
+changes.
 
-Deliberate departure from the plate mockup: the plate's navy rim and thin
-white interior vanish below ~96px, and Play renders the icon at 48dp in most
-places. The route + pin alone survives small sizes and reads instantly, so
-the plate becomes an optional background rather than the mark itself.
+The cream field is knocked out by flood-filling inward from the border rather
+than by thresholding on colour — Greenland, Antarctica and the pin's hole are
+near-white and a colour threshold would eat them.
 
-Outputs (all transparent unless noted):
-  branding/wanderbites_mark.png            1024, transparent, the logo
-  branding/wanderbites_mark_plate.png      1024, transparent, plate version
-  branding/play_icon_512.png               512, opaque cream (Play requires no alpha)
-  branding/icon_foreground.png             1024, transparent, adaptive foreground
-  branding/icon_monochrome.png             1024, transparent, themed-icon layer
-  branding/feature_graphic.png             1024x500, store listing banner
+Outputs:
+  branding/wanderbites_mark.png    1024, transparent, the logo on any background
+  branding/play_icon_512.png       512, opaque cream (Play rejects alpha)
+  branding/icon_foreground.png     1024, transparent, adaptive foreground
+  branding/icon_monochrome.png     1024, transparent, themed-icon layer
+  branding/feature_graphic.png     1024x500, store listing banner
 
-Run:  python tool/generate_icons.py
+Run:  python tool/generate_icons.py && dart run flutter_launcher_icons
 """
 
-import math
 import os
-from PIL import Image, ImageDraw
+from collections import deque
 
-OUT = os.path.join(os.path.dirname(__file__), '..', 'branding')
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.normpath(os.path.join(HERE, '..', 'branding'))
+SRC = os.path.join(OUT, 'source', 'wanderbites_globe.png')
 
 # Brand tokens, mirrored from lib/app/theme/wb_tokens.dart
 EMBER = (228, 89, 59, 255)
 VOYAGE = (14, 79, 74, 255)
 CREAM = (250, 246, 240, 255)
 NAVY = (26, 42, 71, 255)
-WHITE = (255, 255, 255, 255)
 
-SS = 4  # supersample factor; drawn big then downsampled for smooth curves
-
-
-def _bezier(p0, p1, p2, p3, steps=160):
-    """Cubic bezier sample points."""
-    pts = []
-    for i in range(steps + 1):
-        t = i / steps
-        u = 1 - t
-        x = (u**3 * p0[0] + 3 * u**2 * t * p1[0]
-             + 3 * u * t**2 * p2[0] + t**3 * p3[0])
-        y = (u**3 * p0[1] + 3 * u**2 * t * p1[1]
-             + 3 * u * t**2 * p2[1] + t**3 * p3[1])
-        pts.append((x, y))
-    return pts
+# Cream knock-out. Below SOLID a pixel is background outright; above SOFT it is
+# fully opaque art; between the two it gets partial alpha, which is what keeps
+# the navy rim from acquiring a hard jagged edge.
+BG_SOLID = 14.0
+BG_SOFT = 46.0
 
 
-def _resample(points, spacing):
-    """Walk a polyline at fixed arc-length spacing so dashes stay even
-    around curves — spacing by parameter alone bunches them on tight bends."""
-    out = [points[0]]
-    carry = 0.0
-    for a, b in zip(points, points[1:]):
-        seg = math.dist(a, b)
-        if seg == 0:
+def _bg_mask(rgb):
+    """Boolean mask of the cream field, found by flooding in from the border.
+
+    Scanline fill rather than per-pixel BFS: the field is one large simply
+    connected region and spans keep the Python loop count in the thousands.
+    """
+    h, w, _ = rgb.shape
+    corners = np.concatenate([rgb[0, :], rgb[-1, :], rgb[:, 0], rgb[:, -1]])
+    bg_colour = np.median(corners.reshape(-1, 3), axis=0)
+    dist = np.sqrt(((rgb.astype(np.float32) - bg_colour) ** 2).sum(axis=2))
+
+    fillable = dist < BG_SOFT
+    mask = np.zeros((h, w), dtype=bool)
+
+    seeds = deque()
+    for x in range(w):
+        seeds.append((x, 0))
+        seeds.append((x, h - 1))
+    for y in range(h):
+        seeds.append((0, y))
+        seeds.append((w - 1, y))
+
+    while seeds:
+        x, y = seeds.popleft()
+        if mask[y, x] or not fillable[y, x]:
             continue
-        pos = carry
-        while pos + spacing <= seg:
-            pos += spacing
-            t = pos / seg
-            out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
-        carry = pos - seg
-    return out
+        row_fill = fillable[y]
+        row_mask = mask[y]
+        left = x
+        while left > 0 and row_fill[left - 1] and not row_mask[left - 1]:
+            left -= 1
+        right = x
+        while right < w - 1 and row_fill[right + 1] and not row_mask[right + 1]:
+            right += 1
+        row_mask[left:right + 1] = True
+        for ny in (y - 1, y + 1):
+            if 0 <= ny < h:
+                above_fill = fillable[ny]
+                above_mask = mask[ny]
+                nx = left
+                while nx <= right:
+                    if above_fill[nx] and not above_mask[nx]:
+                        seeds.append((nx, ny))
+                        while nx <= right and above_fill[nx]:
+                            nx += 1
+                    nx += 1
+
+    return mask, dist
 
 
-def _dashed(draw, points, color, width, dash, gap):
-    """Draw a polyline as rounded dashes of constant length."""
-    pts = _resample(points, 2.0)
-    step = dash + gap
-    dist = 0.0
-    for a, b in zip(pts, pts[1:]):
-        seg = math.dist(a, b)
-        if seg == 0:
-            continue
-        if (dist % step) < dash:
-            draw.line([a, b], fill=color, width=width)
-            r = width / 2
-            draw.ellipse([a[0] - r, a[1] - r, a[0] + r, a[1] + r], fill=color)
-        dist += seg
+def load_mark():
+    """The source art with its cream field removed and cropped to the mark."""
+    src = Image.open(SRC).convert('RGB')
+    rgb = np.asarray(src)
+    mask, dist = _bg_mask(rgb)
+
+    # Full alpha everywhere, then ramp it down across the knocked-out band so
+    # the antialiased edge of the navy rim survives instead of stair-stepping.
+    alpha = np.full(rgb.shape[:2], 255.0, dtype=np.float32)
+    ramp = np.clip((dist - BG_SOLID) / (BG_SOFT - BG_SOLID), 0.0, 1.0) * 255.0
+    band = mask.copy()
+    for shift in (1, 2, 3):
+        band |= np.roll(mask, shift, axis=0) | np.roll(mask, -shift, axis=0)
+        band |= np.roll(mask, shift, axis=1) | np.roll(mask, -shift, axis=1)
+    alpha[band] = ramp[band]
+    alpha[mask] = 0.0
+
+    out = np.dstack([rgb, alpha.astype(np.uint8)])
+    img = Image.fromarray(out, 'RGBA')
+    return img.crop(img.getbbox())
 
 
-def _pin(draw, cx, cy, w, color):
-    """Map pin: teardrop body with a punched-out hole."""
-    h = w * 1.35
-    top = cy - h / 2
-    r = w / 2
-    draw.ellipse([cx - r, top, cx + r, top + w], fill=color)
-    draw.polygon(
-        [(cx - r * 0.86, top + w * 0.62), (cx + r * 0.86, top + w * 0.62),
-         (cx, top + h)],
-        fill=color,
+def square(mark, size, margin=0.0, background=None):
+    """Fit the mark inside a square canvas, centred, with a relative margin."""
+    avail = int(size * (1 - margin * 2))
+    scale = min(avail / mark.width, avail / mark.height)
+    art = mark.resize(
+        (max(1, round(mark.width * scale)), max(1, round(mark.height * scale))),
+        Image.LANCZOS,
     )
-    hr = w * 0.19
-    draw.ellipse(
-        [cx - hr, top + w / 2 - hr, cx + hr, top + w / 2 + hr],
-        fill=(0, 0, 0, 0),
-    )
+    canvas = Image.new('RGBA', (size, size), background or (0, 0, 0, 0))
+    canvas.alpha_composite(art, ((size - art.width) // 2,
+                                 (size - art.height) // 2))
+    return canvas
 
 
-def draw_mark(size, plate=False, mono=False):
-    """The WB route mark on a transparent canvas."""
-    S = size * SS
-    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+def monochrome(mark, size):
+    """Themed-icon layer: white globe silhouette with the route and pin
+    knocked out of it, so the mark still reads when Android strips colour."""
+    art = np.asarray(square(mark, size, margin=0.02)).astype(np.int16)
+    r, g, b, a = art[..., 0], art[..., 1], art[..., 2], art[..., 3]
+    # Tight on ember specifically. A loose test also catches the warm pencil
+    # strokes in the sand and coastlines, which knock out as dirt.
+    orange = (r > 190) & (b < 115) & (g > 55) & (g < 175) & (r - g > 70)
+    # Opening: a pixel survives only with company, which drops the stray
+    # single-pixel hits the texture produces without thinning the dashes.
+    neighbours = np.zeros(orange.shape, dtype=np.int16)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            neighbours += np.roll(np.roll(orange, dy, axis=0), dx, axis=1)
+    orange &= neighbours >= 6
+    alpha = np.where(a > 128, 255, 0)
+    alpha = np.where(orange, 0, alpha)
+    white = np.full(art.shape[:2] + (3,), 255, dtype=np.uint8)
+    return Image.fromarray(
+        np.dstack([white, alpha.astype(np.uint8)]), 'RGBA')
+
+
+def _font(size):
+    for name in ('segoeuib.ttf', 'seguisb.ttf', 'arialbd.ttf'):
+        path = os.path.join(os.environ.get('WINDIR', r'C:\Windows'),
+                            'Fonts', name)
+        if os.path.exists(path):
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default(size)
+
+
+def feature_graphic(mark):
+    """1024x500 store banner: mark on voyage teal with the name beside it."""
+    img = Image.new('RGBA', (1024, 500), VOYAGE)
+    globe = square(mark, 360)
+    img.alpha_composite(globe, (72, 70))
     d = ImageDraw.Draw(img)
-    route = (255, 255, 255, 255) if mono else EMBER
-
-    # Route geometry in a 0..1 box. Exact placement matters less than it
-    # looks: the mark is auto-fitted to the canvas afterwards, so these
-    # numbers only control proportion, not position.
-    def P(x, y):
-        return (x * S, y * S)
-
-    # One continuous journey: lead-in, W, up into the B, out to the pin.
-    # W and B share a baseline with matching cap height so it reads "WB".
-    path = []
-    path += _bezier(P(0.02, 0.34), P(0.05, 0.26), P(0.09, 0.30), P(0.11, 0.40))
-    # W: four strokes, full height
-    path += _bezier(P(0.11, 0.40), P(0.15, 0.66), P(0.19, 0.78), P(0.24, 0.56))
-    path += _bezier(P(0.24, 0.56), P(0.27, 0.38), P(0.31, 0.36), P(0.34, 0.56))
-    path += _bezier(P(0.34, 0.56), P(0.38, 0.78), P(0.42, 0.76), P(0.46, 0.52))
-    # rise into the B stem
-    path += _bezier(P(0.46, 0.52), P(0.48, 0.36), P(0.50, 0.22), P(0.52, 0.10))
-    # B upper bowl
-    path += _bezier(P(0.52, 0.10), P(0.62, 0.03), P(0.75, 0.09), P(0.74, 0.22))
-    path += _bezier(P(0.74, 0.22), P(0.73, 0.33), P(0.63, 0.39), P(0.54, 0.40))
-    # B lower bowl
-    path += _bezier(P(0.54, 0.40), P(0.68, 0.40), P(0.80, 0.48), P(0.79, 0.61))
-    path += _bezier(P(0.79, 0.61), P(0.78, 0.74), P(0.63, 0.79), P(0.53, 0.72))
-    # tail sweeping out toward the pin
-    path += _bezier(P(0.53, 0.72), P(0.66, 0.82), P(0.83, 0.74), P(0.90, 0.58))
-
-    lw = int(S * (0.032 if plate else 0.041))
-    # Gap comfortably larger than the dash so it reads as a route, not a rope.
-    dash = S * 0.024
-    gap = S * 0.036
-    _dashed(d, path, route, lw, dash, gap)
-    _pin(d, *P(0.95, 0.40), S * 0.155, route)
-
-    # Auto-fit: crop to the drawn pixels, then centre inside the requested
-    # size with a consistent margin. Hand-tuning coordinates to centre a
-    # composition this irregular is guesswork; measuring it is not.
-    bbox = img.getbbox()
-    if bbox:
-        art = img.crop(bbox)
-        margin = 0.14 if plate else 0.08
-        avail = int(S * (1 - margin * 2))
-        scale = min(avail / art.width, avail / art.height)
-        art = art.resize(
-            (max(1, int(art.width * scale)), max(1, int(art.height * scale))),
-            Image.LANCZOS,
-        )
-        canvas = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-        if plate and not mono:
-            pd = ImageDraw.Draw(canvas)
-            m = S * 0.03
-            pd.ellipse([m, m, S - m, S - m], fill=WHITE)
-            pd.ellipse([m, m, S - m, S - m], outline=NAVY,
-                       width=int(S * 0.024))
-            i = S * 0.09
-            pd.ellipse([i, i, S - i, S - i], outline=(214, 219, 227, 255),
-                       width=max(1, int(S * 0.005)))
-        canvas.alpha_composite(art, ((S - art.width) // 2,
-                                     (S - art.height) // 2))
-        img = canvas
-
-    return img.resize((size, size), Image.LANCZOS)
-
-
-def flatten(img, bg):
-    out = Image.new('RGBA', img.size, bg)
-    out.alpha_composite(img)
-    return out
+    d.text((470, 190), 'WanderBites', font=_font(76), fill=(255, 255, 255, 255))
+    d.text((474, 282), 'Follow people with great taste', font=_font(31),
+           fill=(255, 255, 255, 205))
+    return img.convert('RGB')
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    mark = load_mark()
 
-    mark = draw_mark(1024)
-    mark.save(os.path.join(OUT, 'wanderbites_mark.png'))
+    square(mark, 1024).save(os.path.join(OUT, 'wanderbites_mark.png'))
 
-    draw_mark(1024, plate=True).save(
-        os.path.join(OUT, 'wanderbites_mark_plate.png'))
-
-    # Play store icon must be 512 and fully opaque.
-    flatten(draw_mark(512), CREAM).convert('RGB').save(
+    # Play's listing icon must be 512 and fully opaque.
+    square(mark, 512, margin=0.06, background=CREAM).convert('RGB').save(
         os.path.join(OUT, 'play_icon_512.png'))
 
-    # Adaptive foreground: Android masks and zooms it, so the art must sit
-    # inside the inner ~66% safe circle. Draw at 62% and centre it.
-    fg = Image.new('RGBA', (1024, 1024), (0, 0, 0, 0))
-    inner = draw_mark(int(1024 * 0.62))
-    fg.alpha_composite(inner, ((1024 - inner.width) // 2,
-                               (1024 - inner.height) // 2))
-    fg.save(os.path.join(OUT, 'icon_foreground.png'))
+    # Android masks and zooms the adaptive foreground, so the art has to sit
+    # inside the inner ~66% safe circle.
+    square(mark, 1024, margin=0.17).save(
+        os.path.join(OUT, 'icon_foreground.png'))
 
-    mono = Image.new('RGBA', (1024, 1024), (0, 0, 0, 0))
-    inner_m = draw_mark(int(1024 * 0.62), mono=True)
-    mono.alpha_composite(inner_m, ((1024 - inner_m.width) // 2,
-                                   (1024 - inner_m.height) // 2))
-    mono.save(os.path.join(OUT, 'icon_monochrome.png'))
+    monochrome(mark, 1024).save(os.path.join(OUT, 'icon_monochrome.png'))
 
-    # Feature graphic: mark on voyage teal with generous margin.
-    feat = Image.new('RGBA', (1024, 500), VOYAGE)
-    fm = draw_mark(360, mono=True)
-    feat.alpha_composite(fm, (80, 70))
-    feat.convert('RGB').save(os.path.join(OUT, 'feature_graphic.png'))
+    feature_graphic(mark).save(os.path.join(OUT, 'feature_graphic.png'))
 
-    print('wrote icons to', os.path.normpath(OUT))
+    print('wrote icons to', OUT)
 
 
 if __name__ == '__main__':

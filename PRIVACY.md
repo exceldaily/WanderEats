@@ -1,6 +1,9 @@
 # WanderBites Privacy Policy
 
-**Last updated: 29 July 2026**
+**Last updated: 30 July 2026**
+
+*Published at https://wanderbites-gamma.vercel.app/privacy — the served copy is
+`web/privacy.html`. Edit both together.*
 
 WanderBites is a social food-discovery app. You follow people whose taste you
 trust, and see where they recommend eating. This policy explains what we
@@ -73,7 +76,8 @@ visits and follows. This cannot be undone.
 
 If you cannot access the app, email **exceldaily7@gmail.com** from the address
 on the account with the subject "Delete my WanderBites account" and we will
-delete it within 30 days.
+delete it within 30 days. Step-by-step instructions, including what is kept and
+for how long, are at https://wanderbites-gamma.vercel.app/delete-account.
 
 **Access or correct your data.** Most of it is editable in Edit profile. For
 anything else, email us.

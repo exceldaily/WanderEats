@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
@@ -8,6 +9,10 @@ import '../../../core/errors/app_exception.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../profile/data/profile_repository.dart';
+
+/// Public site. Play requires a reachable privacy policy and a data-deletion
+/// page, and linking them from Settings is what reviewers look for.
+const _siteBase = 'https://wanderbites-gamma.vercel.app';
 
 final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
   ref,
@@ -115,8 +120,28 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   onTap: () => _confirmDelete(context, ref),
                 ),
+                const _Header('About'),
+                ListTile(
+                  leading: const Icon(Icons.policy_outlined),
+                  title: const Text('Privacy policy'),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _openSite('/privacy'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.help_outline),
+                  title: const Text('How account deletion works'),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _openSite('/delete-account'),
+                ),
               ],
             ),
+    );
+  }
+
+  Future<void> _openSite(String path) async {
+    await launchUrl(
+      Uri.parse('$_siteBase$path'),
+      mode: LaunchMode.externalApplication,
     );
   }
 

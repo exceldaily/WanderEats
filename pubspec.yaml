@@ -77,8 +77,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-# App icon generation. Source art is drawn by tool/generate_icons.py so every
-# density is rendered from geometry rather than upscaled from a raster.
+# App icon generation. Every layer below is derived by tool/generate_icons.py
+# from the single source file branding/source/wanderbites_globe.png, so
+# changing the logo means replacing that one file and re-running:
 #   python tool/generate_icons.py && dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
