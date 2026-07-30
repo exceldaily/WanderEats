@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/links/safe_link.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_photo.dart';
@@ -55,12 +55,26 @@ class RestaurantDetailsScreen extends ConsumerWidget {
       ref.read(analyticsProvider).directionsOpened(restaurantId: restaurantId),
     );
     final query = Uri.encodeComponent('${r.name} ${r.address ?? ''}');
-    final uri = Uri.parse('geo:0,0?q=$query');
-    if (!await launchUrl(uri)) {
-      await launchUrl(
-        Uri.parse('https://www.google.com/maps/search/?api=1&query=$query'),
-        mode: LaunchMode.externalApplication,
+    // geo: hands off to whatever map app the user actually has; the web URL is
+    // the fallback for a device with none installed.
+    if (await SafeLink.open('geo:0,0?q=$query') != null) {
+      await SafeLink.open(
+        'https://www.google.com/maps/search/?api=1&query=$query',
       );
+    }
+  }
+
+  /// Opens an untrusted link, and says something specific when it is refused.
+  ///
+  /// Restaurant URLs arrive from Google Places today and from claimed business
+  /// owners later. Both are untrusted input, so they go through validation
+  /// instead of straight to the OS.
+  Future<void> _openExternal(BuildContext context, String? url) async {
+    final rejection = await SafeLink.open(url);
+    if (rejection != null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(rejection.message)));
     }
   }
 
@@ -247,10 +261,8 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                               ActionChip(
                                 avatar: const Icon(Icons.language, size: 16),
                                 label: const Text('Website'),
-                                onPressed: () => launchUrl(
-                                  Uri.parse(r.website!),
-                                  mode: LaunchMode.externalApplication,
-                                ),
+                                onPressed: () =>
+                                    _openExternal(context, r.website),
                               ),
                             if (r.phone != null)
                               ActionChip(
@@ -260,7 +272,7 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                                 ),
                                 label: Text(r.phone!),
                                 onPressed: () =>
-                                    launchUrl(Uri.parse('tel:${r.phone}')),
+                                    _openExternal(context, 'tel:${r.phone}'),
                               ),
                           ],
                         ),
