@@ -167,17 +167,43 @@ so a Play-signed build hits a key it is not allowed to use and **the map
 renders blank** — while the sideloaded build keeps working perfectly. This
 is easy to miss.
 
-After the first upload:
+**Play Console's own settings page for this has moved twice** (App signing →
+App integrity → now folded into "Protected with Play" → Play Store
+protection → App signing) and, as of writing, that page can show more than
+one certificate — an upload-key cert and the actual app-signing cert are both
+visible, and it is easy to copy the wrong one. On 2026-07-31 that happened:
+the copied SHA-1 was added to the Maps key, saved cleanly, and the map still
+rendered blank.
 
-1. Play Console → your app → **Test and release → Setup → App signing**
-2. Copy the **SHA-1** under "App signing key certificate"
-3. https://console.cloud.google.com/apis/credentials?project=wanderbites-503816
-   → "WanderBites Maps Android" → Android restrictions → **Add**
-   package `com.wanderbites.app` + that SHA-1
-4. Wait ~5 minutes, then re-test the map in the internal-testing build
+**The reliable source of truth is the device, not the console.** If the map
+is still blank after adding a SHA-1 from Play Console, don't trust the
+console — pull the real error:
 
-The upload-key and local debug SHA-1s are already registered; this adds a
-third.
+```bash
+adb logcat -c
+# relaunch the app, open the map screen
+adb logcat -d | grep -i "Google Android Maps SDK"
+```
+
+The failure logs the exact fingerprint it wanted and didn't get, e.g.:
+
+```
+E Google Android Maps SDK: Authorization failure.
+E Google Android Maps SDK:   API Key: AIza...
+E Google Android Maps SDK:   Android Application (<cert_fingerprint>;<package_name>): XX:XX:...;com.wanderbites.app
+```
+
+Register *that* fingerprint — not whichever one the console page showed —
+against `com.wanderbites.app` in
+https://console.cloud.google.com/apis/credentials?project=wanderbites-503816
+→ "WanderBites Maps Android" → Android restrictions → **Add**.
+
+Registering an extra fingerprint is harmless; multiple certs can be listed
+for the same package. Don't remove the existing entries — the upload-key and
+local debug SHA-1s are already there for the sideloaded/debug builds.
+
+Wait up to 5 minutes for the change to propagate, then relaunch the app
+(force-stop, don't need to reinstall) and re-check the map.
 
 ## Store listing
 
