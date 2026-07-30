@@ -11,6 +11,8 @@ import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_photo.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../monetization/data/conversion_repository.dart';
+import '../../monetization/domain/action_context.dart';
 import '../../recommendations/data/recommendation_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
@@ -54,6 +56,13 @@ class RestaurantDetailsScreen extends ConsumerWidget {
     unawaited(
       ref.read(analyticsProvider).directionsOpened(restaurantId: restaurantId),
     );
+    unawaited(
+      ref.read(trackRestaurantActionProvider)(
+        restaurantId: restaurantId,
+        action: RestaurantAction.directions,
+        context: const ActionContext(source: ActionSource.restaurantPage),
+      ),
+    );
     final query = Uri.encodeComponent('${r.name} ${r.address ?? ''}');
     // geo: hands off to whatever map app the user actually has; the web URL is
     // the fallback for a device with none installed.
@@ -64,12 +73,29 @@ class RestaurantDetailsScreen extends ConsumerWidget {
     }
   }
 
-  /// Opens an untrusted link, and says something specific when it is refused.
+  /// Opens an untrusted link, records the conversion, and says something
+  /// specific when the link is refused.
   ///
   /// Restaurant URLs arrive from Google Places today and from claimed business
   /// owners later. Both are untrusted input, so they go through validation
   /// instead of straight to the OS.
-  Future<void> _openExternal(BuildContext context, String? url) async {
+  ///
+  /// The action is recorded before launching rather than after: once the OS
+  /// takes over, this widget may be disposed before an await would resume.
+  Future<void> _openExternal(
+    BuildContext context,
+    WidgetRef ref,
+    String? url, {
+    required RestaurantAction action,
+  }) async {
+    unawaited(
+      ref.read(trackRestaurantActionProvider)(
+        restaurantId: restaurantId,
+        action: action,
+        context: const ActionContext(source: ActionSource.restaurantPage),
+        destination: url,
+      ),
+    );
     final rejection = await SafeLink.open(url);
     if (rejection != null && context.mounted) {
       ScaffoldMessenger.of(
@@ -261,8 +287,12 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                               ActionChip(
                                 avatar: const Icon(Icons.language, size: 16),
                                 label: const Text('Website'),
-                                onPressed: () =>
-                                    _openExternal(context, r.website),
+                                onPressed: () => _openExternal(
+                                  context,
+                                  ref,
+                                  r.website,
+                                  action: RestaurantAction.website,
+                                ),
                               ),
                             if (r.phone != null)
                               ActionChip(
@@ -271,8 +301,12 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                                   size: 16,
                                 ),
                                 label: Text(r.phone!),
-                                onPressed: () =>
-                                    _openExternal(context, 'tel:${r.phone}'),
+                                onPressed: () => _openExternal(
+                                  context,
+                                  ref,
+                                  'tel:${r.phone}',
+                                  action: RestaurantAction.phone,
+                                ),
                               ),
                           ],
                         ),

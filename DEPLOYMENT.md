@@ -70,14 +70,94 @@ Console access, or a hosting decision.
 ```bash
 python tool/generate_icons.py          # only if branding changed
 dart run flutter_launcher_icons        # only if branding changed
-flutter build appbundle --release --dart-define-from-file=dart_defines/dev.json
+flutter build appbundle --release --dart-define-from-file=dart_defines/prod.json
 ```
+
+**The `--dart-define-from-file` is not optional.** Without it the bundle
+compiles fine and then launches to a "Configuration missing" screen, because
+the Supabase URL and keys are injected at compile time. A bundle built without
+it is uploadable and completely non-functional.
 
 Artifact: `build/app/outputs/bundle/release/app-release.aab`.
 Play requires the .aab, not the .apk.
 
 Bump `version:` in pubspec.yaml for every upload — Play rejects a reused
 versionCode. Format `x.y.z+N`; N is the versionCode.
+
+## Play Console, step by step
+
+Everything below happens at https://play.google.com/console. The developer
+account and identity verification are already done.
+
+### 1. Create the app
+
+**All apps → Create app.**
+
+- App name: `WanderBites`
+- Default language: English (United States)
+- App or game: **App**
+- Free or paid: **Free** (this cannot be changed to paid later, only the
+  reverse — free is correct here since monetization is subscriptions and
+  in-app, not a paid download)
+- Tick both declarations, then **Create app**.
+
+### 2. Upload the bundle first, before filling in any forms
+
+Counter-intuitive, but the SHA-1 you need for Maps does not exist until Google
+has re-signed a bundle, and several forms are easier once the app exists.
+
+**Test and release → Testing → Internal testing → Create new release.**
+
+- Play App Signing is opt-in on the first release. **Accept it.** It lets
+  Google re-sign with their own key and is required for app bundles.
+- Upload `build/app/outputs/bundle/release/app-release.aab`.
+- Release name autofills from the versionCode (`1 (1.0.0)`).
+- Release notes: anything for internal testing, e.g. "First internal build."
+- **Next → Save**, then **Go to overview → Publish**.
+
+Internal testing goes live in minutes rather than the days review takes, and
+it is the fastest way to confirm the Play-signed build actually works.
+
+### 3. Do the SHA-1 step immediately (see the next section)
+
+Do this before testing the internal build, or the map will be blank and you
+will think something is broken.
+
+### 4. Add internal testers
+
+**Internal testing → Testers → Create email list.** Add your own address, save,
+then copy the **join link** at the bottom. Open that link on the phone, accept,
+and install from Play. This is the build to check — it is signed with Google's
+key, which the sideloaded APK is not.
+
+### 5. Fill in the forms Play requires before production
+
+**Test and release → Publishing overview** lists everything outstanding. The
+ones that need real answers:
+
+| Section | Where | Source |
+|---|---|---|
+| App access | Monitor and improve → Policy → App content | All functionality available without restrictions; no login needed to browse |
+| Ads | App content | **No**, the app contains no ads |
+| Content rating | App content | Questionnaire answers are in `STORE_LISTING.md` |
+| Target audience | App content | 13+; not directed at children |
+| Data safety | App content | Full table is in `STORE_LISTING.md` |
+| Privacy policy | App content | https://wanderbites-gamma.vercel.app/privacy |
+| Data deletion | App content → Data safety | https://wanderbites-gamma.vercel.app/delete-account |
+| Government apps | App content | No |
+| Financial features | App content | No |
+| Store listing | Grow → Store presence | Copy in `STORE_LISTING.md`, assets in `branding/` and `store/screenshots/play/` |
+
+Data safety is the one people get wrong. It is a self-declaration, and it must
+match what the app actually does — the table in `STORE_LISTING.md` was written
+from the real code, not aspirationally.
+
+### 6. Promote to production when ready
+
+**Test and release → Production → Create new release**, then promote the same
+bundle. First production review typically takes a few days; later ones are
+faster. Closed testing first is optional but sensible if you want feedback
+before the listing is public.
 
 ## Maps will break on the first Play build unless you do this
 
