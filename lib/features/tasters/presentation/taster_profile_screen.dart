@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/configuration/env.dart';
+import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/utils/plural.dart';
@@ -494,10 +496,13 @@ class _PersonalMap extends ConsumerWidget {
                                 label: 'this food map',
                               ),
                             );
-                        // Jump to the root map tab.
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
+                        // Switch to the Map tab. This has to be a named `go`,
+                        // not Navigator.popUntil: each shell branch owns its
+                        // own Navigator, so popping only unwinds the current
+                        // branch's stack and never actually switches tabs -
+                        // that was the bug (see search_screen.dart for the
+                        // same working pattern).
+                        context.goNamed(Routes.map);
                       },
                       icon: const Icon(Icons.open_in_full, size: 16),
                       label: const Text('View full map'),
