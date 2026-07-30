@@ -80,9 +80,13 @@ if ($Shot -eq 0) {
 $name = $shots[$Shot - 1]
 $dest = Join-Path $outDir "$name.png"
 
-# exec-out keeps the PNG bytes intact; a plain `adb shell screencap` mangles
-# them on Windows by translating line endings.
-& $adb exec-out screencap -p > $dest
+# Capture to the device and pull the file, rather than piping `adb exec-out`
+# into a redirect. PowerShell's `>` is text-mode: it re-encodes the stream and
+# prepends a UTF-8 BOM, which corrupts the PNG header. `adb pull` copies bytes.
+$remote = '/sdcard/wb_shot.png'
+& $adb shell screencap -p $remote
+& $adb pull $remote $dest | Out-Null
+& $adb shell rm -f $remote
 
 if (-not (Test-Path $dest) -or (Get-Item $dest).Length -lt 1024) {
   throw 'Capture failed or came back empty. Is the screen on and unlocked?'
