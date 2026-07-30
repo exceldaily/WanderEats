@@ -1,13 +1,15 @@
-"""Crops raw phone captures into Play-legal store screenshots.
+﻿"""Crops raw phone captures into Play-legal store screenshots.
 
 Play's rule that bites here: "the maximum dimension cannot exceed twice the
 minimum dimension". A raw 1080x2340 capture off a modern phone is 2.17:1 and
 gets rejected. Trimming Android's own status bar and navigation bar fixes the
 ratio and looks better anyway - no clock, no battery, no back button.
 
-The crop is measured, not guessed: the navigation bar is found by scanning up
-from the bottom for the row where the system bar's flat fill ends, so a device
-with a different bar height still comes out right.
+The crop is measured, not guessed: the bars are found by their pixels, so a
+device with different bar heights still comes out right. The heights are taken
+as the batch median rather than per image, because a card that scrolls under
+the navigation bar defeats the detection on that one shot and would leave a
+sliver of the back button in the listing.
 
   python tool/prepare_screenshots.py
 
@@ -78,13 +80,16 @@ def find_status_bar(a):
     return min(int(last_glyph * 1.6), 120)
 
 
-def prepare(path):
+def measure(path):
+    """Status and navigation bar heights for one capture."""
+    a = np.asarray(Image.open(path).convert('RGB')).astype(int)
+    return find_status_bar(a), find_nav_bar(a)
+
+
+def prepare(path, status, nav):
     im = Image.open(path).convert('RGB')
-    a = np.asarray(im).astype(int)
     w, h = im.size
 
-    nav = find_nav_bar(a)
-    status = find_status_bar(a)
     im = im.crop((0, status, w, h - nav))
     w, h = im.size
 
@@ -94,7 +99,7 @@ def prepare(path):
         im = im.crop((0, h - int(w * MAX_RATIO), w, h))
         w, h = im.size
 
-    return im, status, nav
+    return im
 
 
 def main():
@@ -106,9 +111,20 @@ def main():
     if not names:
         sys.exit(f'no .png files in {SRC}')
 
+    # Every shot comes off the same phone, so the system bars are the same
+    # height in all of them. Measuring per image lets one bad reading through:
+    # a card overlapping the navigation bar breaks the flat-fill detection and
+    # leaves a sliver of the back button in the listing. Take the batch median
+    # instead, which one odd image cannot move.
+    measured = [measure(os.path.join(SRC, n)) for n in names]
+    status = int(np.median([m[0] for m in measured]))
+    nav = int(np.median([m[1] for m in measured]))
+    print(f'system bars: {status}px top, {nav}px bottom '
+          f'(median of {len(names)})\n')
+
     failures = 0
     for name in names:
-        im, status, nav = prepare(os.path.join(SRC, name))
+        im = prepare(os.path.join(SRC, name), status, nav)
         dest = os.path.join(OUT, name)
         # 24-bit PNG, no alpha - Play rejects alpha on store assets.
         im.save(dest, optimize=True)
@@ -129,7 +145,7 @@ def main():
         if problems:
             failures += 1
         print(f'{name:28} {w}x{h}  {size // 1024:>5}KB  '
-              f'(cut {status}px top, {nav}px bottom)  {status_txt}')
+              f'{status_txt}')
 
     print(f'\n{len(names)} prepared in {OUT}')
     if failures:
