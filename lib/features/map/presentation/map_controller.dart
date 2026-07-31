@@ -189,9 +189,14 @@ class MapViewController extends Notifier<MapViewState> {
         localCount: markers.length,
       )) {
         state = state.copyWith(importing: true);
-        final imported = await places.ensureCoverage(
-          lat: (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
-          lng: (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+        // Cover the whole viewport, not just its centre. The provider returns
+        // at most 20 places per call, so one call at one point can only ever
+        // fill a small patch of what is on screen.
+        final imported = await places.ensureCoverageArea(
+          minLat: bounds.southwest.latitude,
+          maxLat: bounds.northeast.latitude,
+          minLng: bounds.southwest.longitude,
+          maxLng: bounds.northeast.longitude,
         );
         if (imported > 0) {
           markers = await repo.inBounds(

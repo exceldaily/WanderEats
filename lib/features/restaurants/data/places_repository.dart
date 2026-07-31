@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -45,6 +47,70 @@ class PlacesRepository {
     final data = res.data;
     if (data is Map && data['imported'] is int) return data['imported'] as int;
     return 0;
+  }
+
+  /// How many sample points to spread across the viewport, per axis.
+  ///
+  /// The provider caps a nearby search at 20 results per call, so a single
+  /// call can only ever describe a small patch however large a radius it is
+  /// given. Covering what someone is actually looking at therefore means
+  /// several calls at different centres, and this is the cap on that: a 3x3
+  /// grid, so at most nine, and usually far fewer because the backend skips
+  /// any tile it has already fetched.
+  static const int gridPerAxis = 3;
+
+  /// Covers a whole viewport rather than a single point at its centre.
+  ///
+  /// Previously only the centre was requested, with a fixed 1.5km radius. Any
+  /// viewport wider than about 3km therefore had most of its area left
+  /// untouched, which is why places appeared in one tight cluster and why
+  /// pressing "search this area" repeatedly slowly filled things in: each
+  /// press happened to land on a slightly different centre.
+  ///
+  /// Calls run concurrently, so nine of them cost about the same wall-clock
+  /// time as one. Cost stays bounded because the backend consults its tile
+  /// cache per point and does no provider work for ground it already covered.
+  Future<int> ensureCoverageArea({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+  }) async {
+    final spanLat = (maxLat - minLat).abs();
+    final spanLng = (maxLng - minLng).abs();
+
+    // Radius is sized so neighbouring circles in the grid overlap slightly
+    // rather than leaving unsearched gaps between them.
+    final stepLat = spanLat / gridPerAxis;
+    final stepLng = spanLng / gridPerAxis;
+    final midLat = (minLat + maxLat) / 2;
+    final metresPerDegLng = 111320 * math.cos(midLat * math.pi / 180).abs();
+    final stepMetres = math.max(
+      stepLat * 111320,
+      stepLng * math.max(metresPerDegLng, 1),
+    );
+    final radius = (stepMetres * 0.75).clamp(500.0, 50000.0);
+
+    final points = <({double lat, double lng})>[];
+    for (var i = 0; i < gridPerAxis; i++) {
+      for (var j = 0; j < gridPerAxis; j++) {
+        points.add((
+          lat: minLat + stepLat * (i + 0.5),
+          lng: minLng + stepLng * (j + 0.5),
+        ));
+      }
+    }
+
+    final results = await Future.wait(
+      points.map(
+        (p) => ensureCoverage(
+          lat: p.lat,
+          lng: p.lng,
+          radiusMeters: radius,
+        ).catchError((_) => 0),
+      ),
+    );
+    return results.fold<int>(0, (a, b) => a + b);
   }
 }
 
