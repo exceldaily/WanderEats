@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Wanderbites</string>
+	<string>WanderBites</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>wanderbites</string>
+	<string>WanderBites</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,6 +26,15 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
+	<!-- Declares that this app uses no encryption beyond the HTTPS/TLS the OS
+	     provides (Supabase, Google Places and Firebase are all plain HTTPS;
+	     nothing here implements or bundles its own crypto). Without this key,
+	     App Store Connect halts every single TestFlight build on a manual
+	     export-compliance question before testers can install it, which turns
+	     each upload into a chore. Revisit this if the app ever adds its own
+	     encryption rather than consuming the platform's. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -33,7 +42,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>WanderBites needs access to your photos so you can add them to recommendations and your profile.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>WanderBites uses your location to centre the map on you and show distance to nearby restaurants. The app works without it — you can browse and search anywhere manually.</string>
+	<string>WanderBites uses your location to centre the map on you and show distance to nearby restaurants. The app works without it, so you can still browse and search anywhere manually.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
