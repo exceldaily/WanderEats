@@ -6,14 +6,16 @@
 # paste an error back for a fix, the same way any first CI setup goes.
 #
 # One-time setup required in the Codemagic UI before this can build (none of
-# this can be done from a repo file - it needs your Apple Developer account):
-#   1. Sign up at codemagic.io, connect this GitHub repo.
-#   2. Apple Developer Program membership ($99/yr, developer.apple.com).
-#   3. Codemagic > Teams > Integrations > App Store Connect: create an API
-#      key there (Apple generates it, Codemagic stores it) and name the
-#      integration exactly "wanderbites_asc" - or change the name below to
-#      match whatever you called it.
-#   4. Codemagic > App settings > Environment variables: add a group called
+# this can be done from a repo file - it needs your Apple Developer account).
+# On a Personal Account (not a Team), this lives under Settings > Integrations
+# > Developer Portal, not "Teams > Integrations" as some Codemagic docs say.
+#   1. [done] Sign up at codemagic.io, connect this GitHub repo.
+#   2. [done] Apple Developer Program membership ($99/yr, developer.apple.com).
+#   3. [done] Settings > Integrations > Developer Portal: connected an App
+#      Store Connect API key, saved under the name "Codemagic" - matches the
+#      `integrations.app_store_connect` value below. If you ever add a second
+#      key or rename this one, update that value to match.
+#   4. Codemagic > this app > Environment variables: add a group called
 #      "wanderbites_prod" containing SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
 #      SUPABASE_SCHEMA (same values as dart_defines/prod.json) and
 #      GOOGLE_MAPS_API_KEY_IOS (a *new* Google Cloud key, iOS-restricted to
@@ -31,7 +33,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: wanderbites_asc
+      app_store_connect: Codemagic
     environment:
       ios_signing:
         distribution_type: app_store

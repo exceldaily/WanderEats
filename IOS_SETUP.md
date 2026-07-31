@@ -40,28 +40,29 @@ sign something was done wrong.
 
 Do these in order — later steps depend on earlier ones existing.
 
-### 1. Apple Developer Program
+### 1. Apple Developer Program — done
 
-developer.apple.com — $99/year. Individual or organization; organization
-takes longer to verify (D-U-N-S number) but lets teammates get proper roles
-later. Individual is fine to start.
+### 2. Codemagic account — done
 
-### 2. Codemagic account
+Repo connected as `exceldaily/WanderEats`.
 
-codemagic.io — sign up, connect the `exceldaily/WanderEats` GitHub repo. Free
-tier covers a Flutter project at low volume; upgrade only if you need more
-build minutes.
+### 3. App Store Connect API key → Codemagic integration — done
 
-### 3. App Store Connect API key → Codemagic integration
+Found under **Settings → Integrations → Developer Portal**, not "Teams →
+Integrations → App Store Connect" as Codemagic's own docs say — that path is
+for Team accounts, and this is a Personal Account. Connected with the API
+Manager key, saved under the name **"Codemagic"**.
 
-In App Store Connect (appstoreconnect.apple.com) → Users and Access → Keys,
-generate an API key with **App Manager** access. Download it — Apple only
-lets you download it once.
+`codemagic.yaml`'s `integrations.app_store_connect` value matches that name.
+If you ever rename the key or add a second one, that value needs updating to
+match — Codemagic references it by exactly that name.
 
-In Codemagic → Teams → Integrations → App Store Connect, add that key and
-name the integration **`wanderbites_asc`** exactly, or change the
-`integrations.app_store_connect` value in `codemagic.yaml` to match whatever
-you actually name it.
+One thing worth flagging from how this went: the first key generated
+(`FUBUYZJMFC`) got pasted into a chat with its private key content, which
+means treating it as compromised — it was revoked and replaced with a fresh
+one (now `4J9V26467`) before connecting. If you ever need to regenerate again,
+keep the `.p8` file and its contents out of any chat, ours included; upload it
+straight into Codemagic's form instead.
 
 ### 4. Create the app record
 
