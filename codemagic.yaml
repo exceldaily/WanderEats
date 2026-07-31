@@ -15,14 +15,21 @@
 #      Store Connect API key, saved under the name "Codemagic" - matches the
 #      `integrations.app_store_connect` value below. If you ever add a second
 #      key or rename this one, update that value to match.
-#   4. Codemagic > this app > Environment variables: add a group called
-#      "wanderbites_prod" containing SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
+#   4. [done] Codemagic > this app > Environment variables: a group called
+#      "wanderbites_prod" holding SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
 #      SUPABASE_SCHEMA (same values as dart_defines/prod.json) and
 #      GOOGLE_MAPS_API_KEY_IOS (a *new* Google Cloud key, iOS-restricted to
-#      bundle id com.wanderbites.app - do not reuse the Android key, its
-#      restriction is Android-app-specific). Mark each as "Secure".
-#   5. In App Store Connect, create the app record itself: bundle id
-#      com.wanderbites.app, matching what android's package name is.
+#      bundle id com.wanderbites.app - the Android key cannot be reused, its
+#      restriction is Android-app-specific). Each marked "Secure".
+#   5. [done] In App Store Connect, the app record itself: bundle id
+#      com.wanderbites.app, matching android's package name.
+#   6. CERTIFICATE_PRIVATE_KEY in that same group - an RSA 2048 key generated
+#      locally, pasted in as "Secure". The signing step below hands it to
+#      Apple to issue a distribution certificate against. Generate a fresh one
+#      rather than reusing a key from another project.
+#
+# This app is set to "codemagic.yaml" mode rather than the Workflow Editor;
+# switching back to the editor makes Codemagic ignore this file entirely.
 #
 # After that, a push to main (or a manual run from the Codemagic dashboard)
 # builds an .ipa and uploads it to TestFlight.
@@ -35,11 +42,10 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.wanderbites.app
       groups:
         - wanderbites_prod
+      vars:
+        BUNDLE_ID: com.wanderbites.app
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -55,8 +61,23 @@ workflows:
         script: |
           echo "GOOGLE_MAPS_API_KEY = $GOOGLE_MAPS_API_KEY_IOS" > ios/Flutter/Secrets.xcconfig
 
+      # Automatic code signing. The `ios_signing:` block that used to live in
+      # `environment:` above only FETCHES signing files already uploaded to
+      # Codemagic - it never creates them, so build #1 died instantly with
+      # "No matching profiles found for bundle identifier com.wanderbites.app".
+      # Nothing had been uploaded, and there is no Mac here to generate a
+      # certificate on in the first place. `--create` makes the App Store
+      # Connect API mint the distribution certificate and provisioning profile
+      # instead, which is the only path that works without Apple hardware.
+      # CERTIFICATE_PRIVATE_KEY (in the wanderbites_prod group) is the RSA key
+      # the created certificate is issued against - ours, not Apple's.
       - name: Set up code signing
         script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
           xcode-project use-profiles
 
       - name: Flutter build ipa

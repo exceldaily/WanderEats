@@ -64,7 +64,7 @@ one (now `4J9V26467`) before connecting. If you ever need to regenerate again,
 keep the `.p8` file and its contents out of any chat, ours included; upload it
 straight into Codemagic's form instead.
 
-### 4. Create the app record
+### 4. Create the app record — done
 
 In App Store Connect → Apps → **+** → New App:
 
@@ -73,7 +73,13 @@ In App Store Connect → Apps → **+** → New App:
   hasn't seen it before)
 - SKU: anything unique, e.g. `wanderbites-ios`
 
-### 5. A separate Google Maps key for iOS
+### 5. A separate Google Maps key for iOS — done
+
+Created as `WanderBites Maps iOS`. Note that "Maps SDK for iOS" was not an
+enabled API on the project (only the Android one was), so it does not appear
+in the key's API-restriction picker until you enable it in the API Library
+first. Enable it, reload the credentials page, then create the key.
+
 
 **Do not reuse the Android Maps key** — its restriction is Android-specific
 (package name + SHA-1 fingerprint, the exact mechanism that caused the
@@ -87,10 +93,18 @@ In the same Google Cloud project as the Android key
 3. API restrictions → **Maps SDK for iOS**
 4. Name it something findable, e.g. `WanderBites Maps iOS`
 
-### 6. Codemagic environment variables
+### 6. Codemagic environment variables — done
+
+One thing to know first: this app has to be in **codemagic.yaml mode**, not
+the Workflow Editor. New Codemagic apps default to the editor, and in that
+mode `codemagic.yaml` is ignored entirely and the env-var form has no group
+field at all (groups are a YAML-only concept). Switch via the app's
+**Switch to YAML configuration** link. The env-var page only grows its
+"Select group" dropdown after that switch.
 
 Codemagic → this app → Environment variables → new group named
-**`wanderbites_prod`** (referenced by `codemagic.yaml`'s `groups:`).  Add,
+**`wanderbites_prod`** (referenced by `codemagic.yaml`'s `groups:`). Typing a
+name that doesn't exist yet offers a "Create ... group" option. Add,
 each marked **Secure**:
 
 | Variable | Value |
@@ -102,7 +116,49 @@ each marked **Secure**:
   different variable name from the Android build's `GOOGLE_MAPS_API_KEY`, so
   the two never get mixed up in a shared CI config |
 
-### 7. Push, and watch the first build
+### 7. `CERTIFICATE_PRIVATE_KEY`, and why signing works the way it does
+
+Build #1 failed in seconds, before a Mac was even allocated:
+
+> No matching profiles found for bundle identifier "com.wanderbites.app" and
+> distribution type "app_store"
+
+The cause is worth writing down, because the fix is not obvious. The
+`ios_signing:` block (`distribution_type` + `bundle_identifier`) that
+`codemagic.yaml` originally carried does **not** create signing files. It only
+fetches ones already uploaded to Codemagic's Code signing identities. Nothing
+had been uploaded, and nothing could be: generating a distribution certificate
+the normal way means Keychain Access on a Mac, which this project does not
+have and never will.
+
+So signing now runs through the App Store Connect API instead, which can mint
+both the certificate and the profile with no Apple hardware involved:
+
+```
+keychain initialize
+app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+keychain add-certificates
+xcode-project use-profiles
+```
+
+`--create` is the whole point of the change. It needs one more secret: the RSA
+key Apple issues the certificate against. That key is ours, not Apple's, and is
+generated locally:
+
+```
+ssh-keygen -t rsa -b 2048 -m PEM -f cert_key -q -N ""
+```
+
+Paste the contents of `cert_key` (the private one, not `cert_key.pub`, and
+including both `-----BEGIN/END RSA PRIVATE KEY-----` lines) into the
+`wanderbites_prod` group as **`CERTIFICATE_PRIVATE_KEY`**, marked Secure. Keep
+the file out of the repo, and out of any chat window.
+
+If this step fails with a permissions error rather than a signing error, the
+App Store Connect API key's role is the thing to check. Creating certificates
+needs Admin or App Manager, not Developer.
+
+### 8. Push, and watch the build
 
 Push to `main`, or trigger a run from the Codemagic dashboard. It builds an
 `.ipa` and, if `submit_to_testflight: true` in `codemagic.yaml` stays as-is,
