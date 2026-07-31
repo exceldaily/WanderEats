@@ -7,11 +7,16 @@ plan routes through **Codemagic**, a cloud CI service that builds on real
 Apple hardware and can publish straight to TestFlight. `codemagic.yaml` at
 the repo root is the pipeline; this file is the manual setup around it.
 
-**Nothing in this file has been verified.** It's written from Codemagic's
-documented Flutter iOS recipe and from what the codebase actually needs, but
-the first real signal is Codemagic's own build log on the first push. Expect
-to paste an error back for a fix — that's normal for a first CI setup, not a
-sign something was done wrong.
+**This is now verified.** As of 2026-07-31 the pipeline builds, signs, uploads
+and reaches TestFlight on its own. Build `1.0.0 (2)` is sitting there as Ready
+to Submit and `1.0.0 (3)` processed Complete. It took five attempts to get
+there, and the four failures are documented in place below rather than tidied
+away, because each one was a trap that is easy to fall into again:
+
+1. Signing files that are fetched, never created (step 7)
+2. A missing Podfile, plus a deployment target too low for Firebase (step 9)
+3. Export compliance silently gating every upload (step 9)
+4. Build numbers being permanently consumed on upload (step 9)
 
 ## What's already done in the repo
 
@@ -155,18 +160,52 @@ ever regenerate either one, the names in the yaml have to be updated to match.
 Push to `main`, or trigger a run from the Codemagic dashboard. It builds an
 `.ipa` and, if `submit_to_testflight: true` in `codemagic.yaml` stays as-is,
 uploads it straight to TestFlight. First Apple processing after upload
-usually takes a few minutes to an hour.
+usually takes a few minutes to an hour, and the build shows up under
+**Build Uploads** (with a processing status) before it appears in the list of
+builds available to test. Do not read that gap as a failure.
 
-## After the first successful build
+### 9. Four things that broke the first four builds
 
-- **Install via TestFlight** on a real iPhone (the TestFlight app, an invite
-  from App Store Connect → TestFlight → internal testers). This is the iOS
-  equivalent of the Play internal-testing track — the first time to actually
-  see the app run, since nothing here has been run before.
-- **Push notifications**, if wanted on iOS: needs an APNs key uploaded to the
-  Firebase project (`wanderbites-503816`) under Project Settings → Cloud
-  Messaging → Apple app configuration. Not done yet; not required for
-  TestFlight testing to work, only for push to actually deliver.
+Kept because none of them announce themselves clearly.
+
+**The build number is spent the moment it uploads.** App Store Connect
+permanently consumes a `CFBundleVersion` on upload, whatever happens to that
+build afterwards. Re-running CI without bumping `pubspec.yaml`'s `+N` fails at
+upload, after paying for the whole build. Bump it every time.
+
+**Export compliance gates every single upload.** Without
+`ITSAppUsesNonExemptEncryption` in `Info.plist`, Apple parks each build on a
+manual question and the automatic TestFlight submission fails. It surfaces as
+Codemagic reporting "post-processing failed" on a build that actually uploaded
+perfectly, and as "Missing Compliance" in TestFlight. Build 1 is still stuck
+there as a monument to it.
+
+**CocoaPods reports only the first conflict it hits.** Build 2 blamed
+`google_maps_flutter_ios` needing iOS 14.0. Raising to 14.0 would have failed
+again on Firebase, which needs 15.0. When a deployment-target error appears,
+read every plugin's podspec and take the maximum rather than the one named.
+
+**`ios/Podfile` did not exist.** The "CocoaPods install" step was passing in 3
+seconds because `find . -name Podfile` matched nothing, which reads as success.
+Flutter then generated one at build time with its platform line commented out.
+A step that finishes suspiciously fast is worth checking.
+
+## Still to do
+
+- **Install via TestFlight** on a real iPhone. App Store Connect → TestFlight →
+  Internal Testing, add yourself, install through the TestFlight app. Internal
+  testers skip Apple review, so it is immediate. This is the iOS equivalent of
+  the Play internal-testing track, and the first time anyone will see this app
+  actually run on an iPhone.
+- **Push notifications** need one more piece. The app side is done: build 3
+  carries `aps-environment` via `ios/Runner/Runner.entitlements`, and the App ID
+  has the Push Notifications capability. But nothing will deliver until an APNs
+  auth key exists — developer.apple.com → Keys → **+** → Apple Push
+  Notifications service (APNs) — and is uploaded to the Firebase project
+  (`wanderbites-503816`) under Project Settings → Cloud Messaging → Apple app
+  configuration. That download is a `.p8` private key: upload it straight into
+  Firebase and keep it out of any chat, the same rule as the App Store Connect
+  key in step 3.
 - **Screenshots for the App Store listing**: different aspect ratios from
   Play (6.9" and 6.5" iPhone sizes, plus iPad if supporting it). `STORE_LISTING.md`'s copy
   and data-safety answers carry over conceptually, but App Store Connect's
