@@ -39,11 +39,19 @@ class ProfileHeader extends ConsumerWidget {
     required this.profile,
     required this.actions,
     this.bannerHeight = 112,
+    this.isPopular = false,
   });
 
   final Profile profile;
   final List<Widget> actions;
   final double bannerHeight;
+
+  /// Computed server-side (see is_popular_taster), not a stored field on
+  /// Profile - the caller fetches it and passes it in, the same way
+  /// can_create_guides() is fetched rather than cached on the model. Keeps
+  /// this widget's other callers (e.g. the edit-profile preview) from paying
+  /// for a lookup nobody there needs.
+  final bool isPopular;
 
   static const double _avatarRadius = 40;
 
@@ -163,6 +171,11 @@ class ProfileHeader extends ConsumerWidget {
                     const Padding(
                       padding: EdgeInsets.only(left: 6),
                       child: DemoBadge(),
+                    ),
+                  if (isPopular)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: PopularBadge(),
                     ),
                 ],
               ),
@@ -496,6 +509,57 @@ class DemoBadge extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Marks a Taster who has cleared both a follower and a reputation threshold
+/// (is_popular_taster) - real reach and a track record of accurate
+/// recommendations, not one without the other. Thresholds live in
+/// app_settings, so this reads as "earned" rather than a fixed vanity badge.
+class PopularBadge extends StatelessWidget {
+  const PopularBadge({super.key, this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: 'Popular Taster: widely followed and consistently accurate',
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 5 : 7,
+          vertical: compact ? 1 : 2,
+        ),
+        decoration: BoxDecoration(
+          color: WbColors.emberSoft,
+          borderRadius: BorderRadius.circular(WbRadius.pill),
+          border: Border.all(color: WbColors.ember.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_fire_department,
+              size: compact ? 11 : 13,
+              color: WbColors.ember,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              'Popular',
+              style:
+                  (compact
+                          ? theme.textTheme.labelSmall
+                          : theme.textTheme.labelMedium)
+                      ?.copyWith(
+                        color: WbColors.ember,
+                        fontWeight: FontWeight.w600,
+                      ),
+            ),
+          ],
         ),
       ),
     );

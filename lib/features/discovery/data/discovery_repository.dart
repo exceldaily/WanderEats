@@ -24,6 +24,34 @@ class DiscoveryRepository {
     }
   }
 
+  /// Who to follow, ranked by actual fit rather than raw popularity: shared
+  /// taste tags, matching taste personality, and whether the candidate has
+  /// recommended places near [nearLat]/[nearLng]. Omitting the point falls
+  /// back to the caller's home city server-side, so this is safe to call
+  /// before location permission has even been asked for.
+  Future<List<Map<String, dynamic>>> suggestedTasters({
+    double? nearLat,
+    double? nearLng,
+    int max = 10,
+  }) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return [];
+    try {
+      final rows = await _schema.rpc<List<dynamic>>(
+        'suggested_tasters',
+        params: {
+          'uid': userId,
+          'area_lat': ?nearLat,
+          'area_lng': ?nearLng,
+          'max_rows': max,
+        },
+      );
+      return rows.cast<Map<String, dynamic>>();
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
   Future<List<Restaurant>> trendingRestaurants({
     String? citySlug,
     int max = 10,

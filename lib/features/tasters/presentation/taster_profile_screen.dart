@@ -36,6 +36,11 @@ final tasterStatsProvider = FutureProvider.autoDispose
       (ref, id) => ref.watch(tasterRepositoryProvider).stats(id),
     );
 
+final isPopularTasterProvider = FutureProvider.autoDispose
+    .family<bool, String>(
+      (ref, id) => ref.watch(tasterRepositoryProvider).isPopular(id),
+    );
+
 final tasterPlacesProvider = FutureProvider.autoDispose
     .family<List<TasterPlace>, String>(
       (ref, id) => ref.watch(tasterRepositoryProvider).places(id),
@@ -110,6 +115,9 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                   SliverToBoxAdapter(
                     child: ProfileHeader(
                       profile: p,
+                      isPopular:
+                          ref.watch(isPopularTasterProvider(p.id)).value ??
+                          false,
                       actions: [
                         if (!isMe)
                           _FollowButton(

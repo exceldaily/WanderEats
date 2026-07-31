@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/location/location_service.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../lists/data/list_repository.dart';
 import '../../lists/domain/food_list.dart';
+import '../../profile/presentation/widgets/profile_header.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../../restaurants/domain/restaurant.dart';
@@ -23,6 +25,31 @@ final trendingTastersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
       (ref) => ref.watch(discoveryRepositoryProvider).trendingTasters(),
     );
+
+/// Best-effort current position for "near you" ranking. Never prompts on its
+/// own initiative beyond what LocationService already gates behind an actual
+/// permission flow, and a denial or a cold GPS fix just means
+/// suggestedTastersProvider falls back to the caller's home city server-side
+/// - so this is safe to watch unconditionally.
+final _currentPositionProvider = FutureProvider.autoDispose((ref) {
+  return ref.watch(locationServiceProvider).currentPosition();
+});
+
+/// Who to follow next, ranked by shared taste and by whether they recommend
+/// places near you - not by raw popularity. See suggested_tasters() for the
+/// scoring; trending Tasters below is the separate popularity-only list.
+final suggestedTastersProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+      final signedIn = ref.watch(isSignedInProvider);
+      if (!signedIn) return [];
+      final position = await ref.watch(_currentPositionProvider.future);
+      return ref
+          .watch(discoveryRepositoryProvider)
+          .suggestedTasters(
+            nearLat: position?.latitude,
+            nearLng: position?.longitude,
+          );
+    });
 
 final trendingRestaurantsProvider =
     FutureProvider.autoDispose<List<Restaurant>>(
@@ -80,6 +107,7 @@ class _ForYouTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(trendingTastersProvider);
+        ref.invalidate(suggestedTastersProvider);
         ref.invalidate(trendingRestaurantsProvider);
         ref.invalidate(newListsProvider);
       },
@@ -146,20 +174,42 @@ class _ForYouTab extends ConsumerWidget {
                           width: 88,
                           child: Column(
                             children: [
-                              CircleAvatar(
-                                radius: 30,
-                                backgroundImage: t['avatar_url'] == null
-                                    ? null
-                                    : CachedNetworkImageProvider(
-                                        t['avatar_url'] as String,
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: t['avatar_url'] == null
+                                        ? null
+                                        : CachedNetworkImageProvider(
+                                            t['avatar_url'] as String,
+                                          ),
+                                    child: t['avatar_url'] == null
+                                        ? Text(
+                                            (t['display_name'] as String)
+                                                .characters
+                                                .first,
+                                          )
+                                        : null,
+                                  ),
+                                  if (t['is_popular'] == true)
+                                    Positioned(
+                                      right: -2,
+                                      bottom: -2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.surface,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.local_fire_department,
+                                          size: 14,
+                                          color: WbColors.ember,
+                                        ),
                                       ),
-                                child: t['avatar_url'] == null
-                                    ? Text(
-                                        (t['display_name'] as String)
-                                            .characters
-                                            .first,
-                                      )
-                                    : null,
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: WbSpacing.xs),
                               Text(
@@ -182,6 +232,36 @@ class _ForYouTab extends ConsumerWidget {
                   ),
                 ),
           ),
+          if (ref.watch(isSignedInProvider)) ...[
+            _SectionHeader(title: 'Suggested for you'),
+            ref
+                .watch(suggestedTastersProvider)
+                .when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: WbSpacing.md,
+                    ),
+                    child: WbSkeleton(height: 108),
+                  ),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (suggestions) => suggestions.isEmpty
+                      ? const SizedBox.shrink()
+                      : SizedBox(
+                          height: 132,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: WbSpacing.md,
+                            ),
+                            itemCount: suggestions.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: WbSpacing.sm),
+                            itemBuilder: (context, i) =>
+                                _SuggestedTasterCard(taster: suggestions[i]),
+                          ),
+                        ),
+                ),
+          ],
           _SectionHeader(title: 'Trending restaurants'),
           ref
               .watch(trendingRestaurantsProvider)
@@ -347,6 +427,126 @@ class _FollowingTab extends ConsumerWidget {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// One suggested Taster: who they are, *why* they were suggested, and a
+/// one-tap follow. The "why" line is what makes this a suggestion rather than
+/// just a second trending list - it's built from whichever signal actually
+/// fired in suggested_tasters(), in the order a person would find most
+/// convincing.
+class _SuggestedTasterCard extends ConsumerWidget {
+  const _SuggestedTasterCard({required this.taster});
+
+  final Map<String, dynamic> taster;
+
+  String get _reason {
+    final tags = (taster['shared_tags'] as List?)?.cast<String>() ?? const [];
+    if (tags.isNotEmpty) {
+      return 'Shares your ${tags.take(2).join(' & ')}';
+    }
+    final nearby = (taster['nearby_recs'] as num?)?.toInt() ?? 0;
+    if (nearby > 0) {
+      return 'Recommends ${countOf(nearby, 'place')} near you';
+    }
+    return 'Similar taste to yours';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final id = taster['id'] as String;
+    final following = (ref.watch(followingIdsProvider).value ?? {}).contains(
+      id,
+    );
+
+    return InkWell(
+      onTap: () =>
+          context.pushNamed(Routes.taster, pathParameters: {'id': id}),
+      borderRadius: BorderRadius.circular(WbRadius.card),
+      child: Container(
+        width: 230,
+        padding: const EdgeInsets.all(WbSpacing.sm),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(WbRadius.card),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: taster['avatar_url'] == null
+                      ? null
+                      : CachedNetworkImageProvider(
+                          taster['avatar_url'] as String,
+                        ),
+                  child: taster['avatar_url'] == null
+                      ? Text((taster['display_name'] as String).characters.first)
+                      : null,
+                ),
+                const SizedBox(width: WbSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              taster['display_name'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (taster['is_verified'] == true)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 3),
+                              child: Icon(
+                                Icons.verified,
+                                size: 13,
+                                color: WbColors.voyageLight,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (taster['is_demo'] == true) const DemoBadge(compact: true),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: WbSpacing.xs),
+            Text(
+              _reason,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                ),
+                onPressed: () =>
+                    ref.read(followingIdsProvider.notifier).toggle(id),
+                child: Text(following ? 'Following' : 'Follow'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

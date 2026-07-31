@@ -22,6 +22,21 @@ class TasterRepository {
     }
   }
 
+  /// Computed on read (follower count + reputation vs. app_settings
+  /// thresholds), not a stored column - so it never needs backfilling as
+  /// thresholds change. A lookup failure reads as "not popular" rather than
+  /// blocking the profile page.
+  Future<bool> isPopular(String userId) async {
+    try {
+      return await _schema.rpc<bool>(
+        'is_popular_taster',
+        params: {'uid': userId},
+      );
+    } on PostgrestException {
+      return false;
+    }
+  }
+
   Future<Set<String>> myFollowingIds(String myId) async {
     final rows = await _schema
         .from('follows')
