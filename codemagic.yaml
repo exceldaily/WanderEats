@@ -97,4 +97,16 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Upload to App Store Connect, but do not queue an Apple Beta App
+        # Review. Internal testers can install an uploaded build immediately
+        # without any review, which covers day-to-day iteration; external
+        # testing is the only thing that needs review, and that is a decision
+        # worth making deliberately rather than as a side effect of pushing.
+        #
+        # This was true, which is how build 5 ended up "Waiting for Review"
+        # without anyone choosing to submit it: once an external tester group
+        # existed, every finished build started submitting itself.
+        #
+        # To ship to external testers: App Store Connect > TestFlight > the
+        # external group > add the build > Submit for Review.
+        submit_to_testflight: false
