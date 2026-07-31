@@ -2,7 +2,7 @@ name: wanderbites
 description: "WanderBites - social travel map for food discovery. Follow people with great taste, discover unforgettable places."
 publish_to: 'none'
 
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: ^3.12.2
