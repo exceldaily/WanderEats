@@ -23,10 +23,14 @@
 #      restriction is Android-app-specific). Each marked "Secure".
 #   5. [done] In App Store Connect, the app record itself: bundle id
 #      com.wanderbites.app, matching android's package name.
-#   6. CERTIFICATE_PRIVATE_KEY in that same group - an RSA 2048 key generated
-#      locally, pasted in as "Secure". The signing step below hands it to
-#      Apple to issue a distribution certificate against. Generate a fresh one
-#      rather than reusing a key from another project.
+#   6. [done] Settings > Code signing identities: a distribution certificate
+#      saved as "wanderbites_distribution" (Generate certificate, type Apple
+#      Distribution, using the API key above - Codemagic keeps the private key
+#      on its side, so none of it has to be handled by hand), plus the App
+#      Store provisioning profile saved as "wanderbites_appstore_profile".
+#      The profile itself has to be created in Apple's portal first
+#      (developer.apple.com > Profiles > App Store), because Codemagic can
+#      fetch profiles but cannot create them. Fetch profiles pulls it in after.
 #
 # This app is set to "codemagic.yaml" mode rather than the Workflow Editor;
 # switching back to the editor makes Codemagic ignore this file entirely.
@@ -42,10 +46,19 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
+      # Signing files are referenced by the exact reference names they were
+      # saved under in Settings > Code signing identities. Referencing them by
+      # name rather than by `distribution_type`/`bundle_identifier` matching is
+      # deliberate: name lookup either finds the thing or says so plainly,
+      # where a type match that finds nothing produces "No matching profiles
+      # found", which reads like a signing bug rather than an empty shelf.
+      ios_signing:
+        provisioning_profiles:
+          - wanderbites_appstore_profile
+        certificates:
+          - wanderbites_distribution
       groups:
         - wanderbites_prod
-      vars:
-        BUNDLE_ID: com.wanderbites.app
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -61,23 +74,10 @@ workflows:
         script: |
           echo "GOOGLE_MAPS_API_KEY = $GOOGLE_MAPS_API_KEY_IOS" > ios/Flutter/Secrets.xcconfig
 
-      # Automatic code signing. The `ios_signing:` block that used to live in
-      # `environment:` above only FETCHES signing files already uploaded to
-      # Codemagic - it never creates them, so build #1 died instantly with
-      # "No matching profiles found for bundle identifier com.wanderbites.app".
-      # Nothing had been uploaded, and there is no Mac here to generate a
-      # certificate on in the first place. `--create` makes the App Store
-      # Connect API mint the distribution certificate and provisioning profile
-      # instead, which is the only path that works without Apple hardware.
-      # CERTIFICATE_PRIVATE_KEY (in the wanderbites_prod group) is the RSA key
-      # the created certificate is issued against - ours, not Apple's.
+      # Applies the fetched profile to the Xcode project. Runs after pod
+      # install, since CocoaPods regenerates the workspace this edits.
       - name: Set up code signing
         script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
           xcode-project use-profiles
 
       - name: Flutter build ipa

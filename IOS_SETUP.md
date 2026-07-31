@@ -116,47 +116,39 @@ each marked **Secure**:
   different variable name from the Android build's `GOOGLE_MAPS_API_KEY`, so
   the two never get mixed up in a shared CI config |
 
-### 7. `CERTIFICATE_PRIVATE_KEY`, and why signing works the way it does
+### 7. Code signing, without ever touching a private key — done
 
 Build #1 failed in seconds, before a Mac was even allocated:
 
 > No matching profiles found for bundle identifier "com.wanderbites.app" and
 > distribution type "app_store"
 
-The cause is worth writing down, because the fix is not obvious. The
-`ios_signing:` block (`distribution_type` + `bundle_identifier`) that
-`codemagic.yaml` originally carried does **not** create signing files. It only
-fetches ones already uploaded to Codemagic's Code signing identities. Nothing
-had been uploaded, and nothing could be: generating a distribution certificate
-the normal way means Keychain Access on a Mac, which this project does not
-have and never will.
+Worth writing down, because the error is misleading. The `ios_signing:` block
+does **not** create signing files. It only fetches ones already saved in
+Codemagic's Code signing identities, and nothing had been saved yet. The
+message reads like a signing failure when it actually means an empty shelf.
 
-So signing now runs through the App Store Connect API instead, which can mint
-both the certificate and the profile with no Apple hardware involved:
+The obvious fix (`app-store-connect fetch-signing-files --create`) works but
+drags in a `CERTIFICATE_PRIVATE_KEY` secret you have to generate and paste by
+hand. There's a better route that avoids handling key material entirely:
 
-```
-keychain initialize
-app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-keychain add-certificates
-xcode-project use-profiles
-```
+**Certificate** — Settings → Code signing identities → iOS certificates →
+**Generate certificate**. Name it `wanderbites_distribution`, type **Apple
+Distribution**, pick the App Store Connect API key. Codemagic generates the
+keypair, registers the certificate with Apple, and keeps the private key on its
+side. It offers a one-time password-protected download as a backup; skipping it
+is fine, since builds use Codemagic's stored copy.
 
-`--create` is the whole point of the change. It needs one more secret: the RSA
-key Apple issues the certificate against. That key is ours, not Apple's, and is
-generated locally:
+**Profile** — this one has to start in Apple's portal, because Codemagic can
+fetch profiles but cannot create them. At developer.apple.com → Certificates,
+Identifiers & Profiles → Profiles → **+** → Distribution → **App Store
+Connect**, pick App ID `com.wanderbites.app`, tick the certificate from the
+previous step, and name it. Then back in Codemagic → iOS provisioning profiles
+→ **Fetch profiles**, tick it, and save it under the reference name
+`wanderbites_appstore_profile`. No download needed, it comes over the API.
 
-```
-ssh-keygen -t rsa -b 2048 -m PEM -f cert_key -q -N ""
-```
-
-Paste the contents of `cert_key` (the private one, not `cert_key.pub`, and
-including both `-----BEGIN/END RSA PRIVATE KEY-----` lines) into the
-`wanderbites_prod` group as **`CERTIFICATE_PRIVATE_KEY`**, marked Secure. Keep
-the file out of the repo, and out of any chat window.
-
-If this step fails with a permissions error rather than a signing error, the
-App Store Connect API key's role is the thing to check. Creating certificates
-needs Admin or App Manager, not Developer.
+`codemagic.yaml` then references both by those exact reference names. If you
+ever regenerate either one, the names in the yaml have to be updated to match.
 
 ### 8. Push, and watch the build
 
