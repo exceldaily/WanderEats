@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Without this key iOS never hands the app a device token, so
+	     firebase_messaging registers and then silently receives nothing. The
+	     build still succeeds, which is what makes it easy to miss: push simply
+	     does not arrive and there is no error to chase.
+
+	     "production" is the right value for both TestFlight and the App Store;
+	     the "development" environment is only for debug builds signed with a
+	     development profile. This project has no Mac and only ever produces
+	     release builds through CI, so a development variant would be a moving
+	     part guarding a case that cannot happen here. If a Mac ever enters the
+	     picture, add a second entitlements file for the Debug configuration
+	     rather than changing this value. -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>
