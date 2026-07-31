@@ -234,6 +234,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       padding: EdgeInsets.only(top: WbSpacing.sm),
                       child: LinearProgressIndicator(minHeight: 3),
                     ),
+                  // Importing means a live provider lookup for an area nobody
+                  // has opened before, which takes a second or two. Without
+                  // saying so, the pause reads as the app being broken rather
+                  // than busy. Any places we already had are on screen by now.
+                  if (mapState.importing)
+                    Padding(
+                      padding: const EdgeInsets.only(top: WbSpacing.sm),
+                      child: Material(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(WbRadius.chip),
+                        child: const Padding(
+                          padding: EdgeInsets.all(WbSpacing.sm),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              SizedBox(width: WbSpacing.sm),
+                              Text('Exploring this area for the first time...'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

@@ -162,6 +162,18 @@ class MapViewController extends Notifier<MapViewState> {
         maxLat: bounds.northeast.latitude,
       );
 
+      // Paint whatever the database already knows about before deciding
+      // whether to import. Previously these markers were held back until the
+      // provider call below had finished, so an area that already had places
+      // in it still looked empty for the couple of seconds that call takes.
+      // Partial results now, more in a moment, beats nothing now.
+      state = state.copyWith(
+        markers: markers,
+        loading: false,
+        offline: false,
+        boundsDirty: false,
+      );
+
       // Anywhere we have little or no data, pull the area from the external
       // provider once and re-read. This is what makes the map work outside the
       // curated cities; the backend no-ops on tiles it already fetched, so
@@ -188,16 +200,10 @@ class MapViewController extends Notifier<MapViewState> {
             maxLng: bounds.northeast.longitude,
             maxLat: bounds.northeast.latitude,
           );
+          state = state.copyWith(markers: markers);
         }
+        state = state.copyWith(importing: false);
       }
-
-      state = state.copyWith(
-        markers: markers,
-        loading: false,
-        importing: false,
-        offline: false,
-        boundsDirty: false,
-      );
     } catch (_) {
       final cached = await ref
           .read(restaurantRepositoryProvider)
