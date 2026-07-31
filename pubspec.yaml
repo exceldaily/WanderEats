@@ -86,9 +86,10 @@ flutter:
 #   python tool/generate_icons.py && dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
   image_path: "branding/play_icon_512.png"
+  image_path_ios: "branding/ios_icon_1024.png"
+  remove_alpha_ios: true
   adaptive_icon_background: "#FAF6F0"
   adaptive_icon_foreground: "branding/icon_foreground.png"
   adaptive_icon_monochrome: "branding/icon_monochrome.png"
-  remove_alpha_ios: true

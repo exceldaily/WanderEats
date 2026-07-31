@@ -182,6 +182,12 @@ def main():
     square(mark, 512, margin=0.06, background=CREAM).convert('RGB').save(
         os.path.join(OUT, 'play_icon_512.png'))
 
+    # App Store icon: same opaque-background rule as Play (Apple rejects an
+    # alpha channel too), but at the full 1024 Apple asks for rather than
+    # upscaling the 512 Play asset.
+    square(mark, 1024, margin=0.06, background=CREAM).convert('RGB').save(
+        os.path.join(OUT, 'ios_icon_1024.png'))
+
     # Android masks and zooms the adaptive foreground, so the art has to sit
     # inside the inner ~66% safe circle.
     square(mark, 1024, margin=0.17).save(

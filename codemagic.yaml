@@ -1,0 +1,77 @@
+# WanderBites iOS build + TestFlight publish, on Codemagic's cloud Macs.
+#
+# UNVERIFIED: written from Codemagic's documented Flutter iOS recipe, but
+# nobody on this project has a Mac, so this has never actually run. The first
+# real signal is Codemagic's own build log on the first push - expect to
+# paste an error back for a fix, the same way any first CI setup goes.
+#
+# One-time setup required in the Codemagic UI before this can build (none of
+# this can be done from a repo file - it needs your Apple Developer account):
+#   1. Sign up at codemagic.io, connect this GitHub repo.
+#   2. Apple Developer Program membership ($99/yr, developer.apple.com).
+#   3. Codemagic > Teams > Integrations > App Store Connect: create an API
+#      key there (Apple generates it, Codemagic stores it) and name the
+#      integration exactly "wanderbites_asc" - or change the name below to
+#      match whatever you called it.
+#   4. Codemagic > App settings > Environment variables: add a group called
+#      "wanderbites_prod" containing SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
+#      SUPABASE_SCHEMA (same values as dart_defines/prod.json) and
+#      GOOGLE_MAPS_API_KEY_IOS (a *new* Google Cloud key, iOS-restricted to
+#      bundle id com.wanderbites.app - do not reuse the Android key, its
+#      restriction is Android-app-specific). Mark each as "Secure".
+#   5. In App Store Connect, create the app record itself: bundle id
+#      com.wanderbites.app, matching what android's package name is.
+#
+# After that, a push to main (or a manual run from the Codemagic dashboard)
+# builds an .ipa and uploads it to TestFlight.
+
+workflows:
+  ios-testflight:
+    name: WanderBites iOS (TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: wanderbites_asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.wanderbites.app
+      groups:
+        - wanderbites_prod
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Flutter packages
+        script: flutter pub get
+
+      - name: CocoaPods install
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+
+      - name: Write iOS Secrets.xcconfig
+        script: |
+          echo "GOOGLE_MAPS_API_KEY = $GOOGLE_MAPS_API_KEY_IOS" > ios/Flutter/Secrets.xcconfig
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Flutter build ipa
+        script: |
+          flutter build ipa --release \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=SUPABASE_SCHEMA="$SUPABASE_SCHEMA" \
+            --dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY_IOS" \
+            --dart-define=APP_ENV=production \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

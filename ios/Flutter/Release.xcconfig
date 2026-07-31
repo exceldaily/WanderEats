@@ -1,1 +1,5 @@
 #include "Generated.xcconfig"
+// CI (Codemagic) writes this with the iOS Google Maps key before building;
+// it does not exist in git and is optional here so a local Xcode open
+// doesn't fail without it. See codemagic.yaml and IOS_SETUP.md.
+#include? "Secrets.xcconfig"

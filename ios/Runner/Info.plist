@@ -24,8 +24,16 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GMSApiKey</key>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>WanderBites needs your camera to add photos to recommendations and your profile.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>WanderBites needs access to your photos so you can add them to recommendations and your profile.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WanderBites uses your location to centre the map on you and show distance to nearby restaurants. The app works without it — you can browse and search anywhere manually.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
