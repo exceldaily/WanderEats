@@ -81,7 +81,7 @@ void main() {
       for (final t in ReportTarget.values.where(
         (t) => t != ReportTarget.restaurant,
       )) {
-        expect(t.isAuthoredByPerson, isTrue, reason: '${t.name}');
+        expect(t.isAuthoredByPerson, isTrue, reason: t.name);
       }
     });
 
