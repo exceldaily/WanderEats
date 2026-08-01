@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../safety/presentation/blocked_accounts_screen.dart';
 
 /// Public site. Play requires a reachable privacy policy and a data-deletion
 /// page, and linking them from Settings is what reviewers look for.
@@ -91,6 +92,19 @@ class SettingsScreen extends ConsumerWidget {
                   title: Text(l10n.settingsShowVisitedPublicly),
                   value: flag('show_visited_publicly'),
                   onChanged: (v) => _update(ref, 'show_visited_publicly', v),
+                ),
+                // Sits under Privacy rather than Account: managing who cannot
+                // reach you is a privacy control, and it needs to be somewhere
+                // people can find it without already knowing it exists.
+                ListTile(
+                  leading: const Icon(Icons.block),
+                  title: const Text('Blocked accounts'),
+                  subtitle: const Text('People who cannot interact with you'),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const BlockedAccountsScreen(),
+                    ),
+                  ),
                 ),
                 _Header(l10n.settingsAccount),
                 ListTile(

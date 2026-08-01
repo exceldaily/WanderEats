@@ -22,6 +22,8 @@ import '../../profile/presentation/widgets/taste_personality_card.dart';
 import '../../recommendations/data/recommendation_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
+import '../../safety/domain/safety.dart';
+import '../../safety/presentation/safety_sheet.dart';
 import '../data/taster_repository.dart';
 import 'follow_providers.dart';
 import 'widgets/mutual_taste_card.dart';
@@ -230,10 +232,33 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                         tooltip: 'Back',
                         onPressed: () => Navigator.of(context).maybePop(),
                       ),
-                      _ScrimIconButton(
-                        icon: Icons.share_outlined,
-                        tooltip: 'Share profile',
-                        onPressed: () => _share(p),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ScrimIconButton(
+                            icon: Icons.share_outlined,
+                            tooltip: 'Share profile',
+                            onPressed: () => _share(p),
+                          ),
+                          // Blocking and reporting are available to everyone,
+                          // signed-in or not, free or paid. Deliberately sits
+                          // next to Share rather than buried, and is only
+                          // hidden on your own profile where it is meaningless.
+                          if (!isMe)
+                            _ScrimIconButton(
+                              icon: Icons.more_vert,
+                              tooltip: 'Report or block',
+                              onPressed: () => showSafetySheet(
+                                context,
+                                target: ReportTarget.profile,
+                                targetId: p.id,
+                                subjectUserId: p.id,
+                                subjectName: p.displayName.isNotEmpty
+                                    ? p.displayName
+                                    : '@${p.username}',
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
