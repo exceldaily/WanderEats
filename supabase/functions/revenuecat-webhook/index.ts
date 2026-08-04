@@ -110,7 +110,12 @@ Deno.serve(async (req) => {
   const event = (body.event ?? {}) as Record<string, unknown>;
   const eventType = String(event.type ?? '');
   const appUserId = String(event.app_user_id ?? '');
-  const productId = String(event.product_id ?? '');
+  // Play events arrive as "subscriptionId:basePlanId"; the catalogue keys on
+  // the bare subscription id. Without this split an Android purchase would
+  // miss the subscription_products lookup and grant nothing - silently. App
+  // Store ids never contain ':', so this is a no-op for iOS. The unmodified
+  // id is still preserved inside p_raw for support forensics.
+  const productId = String(event.product_id ?? '').split(':')[0];
 
   if (!UUID_RE.test(appUserId)) {
     // Anonymous RevenueCat ids ($RCAnonymousID:...) arrive when a purchase
