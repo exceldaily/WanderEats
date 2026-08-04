@@ -57,6 +57,10 @@ class WbPhoto extends StatelessWidget {
                 'apikey': Env.supabasePublishableKey,
               }
             : null,
+        // Photos ease in instead of popping; honors reduced motion.
+        fadeInDuration: MediaQuery.of(context).disableAnimations
+            ? Duration.zero
+            : const Duration(milliseconds: 220),
         placeholder: (_, _) => _placeholder(context),
         errorWidget: (_, _, _) => _placeholder(context),
       ),
