@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
@@ -34,6 +35,7 @@ class NotificationsScreen extends ConsumerWidget {
       'list_update' => 'A list you collaborate on was updated',
       'saved_list_update' => 'A list you follow got a new place',
       'badge' => 'Badge unlocked: ${n.payload['badge_slug'] ?? ''}',
+      'message' => '$who sent you a message',
       _ => 'Activity',
     };
   }
@@ -47,6 +49,7 @@ class NotificationsScreen extends ConsumerWidget {
     'list_update' ||
     'saved_list_update' => Icons.playlist_add_check,
     'badge' => Icons.emoji_events_outlined,
+    'message' => Icons.forum_outlined,
     _ => Icons.notifications_none,
   };
 
@@ -58,6 +61,12 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Activity'),
         actions: [
+          if (session != null)
+            IconButton(
+              tooltip: 'Messages',
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => context.pushNamed(Routes.messages),
+            ),
           if (session != null)
             TextButton(
               onPressed: () async {

@@ -17,6 +17,8 @@ import '../../features/discovery/presentation/search_screen.dart';
 import '../../features/lists/presentation/create_list_screen.dart';
 import '../../features/lists/presentation/list_details_screen.dart';
 import '../../features/map/presentation/map_screen.dart';
+import '../../features/messaging/presentation/chat_screen.dart';
+import '../../features/messaging/presentation/conversations_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
@@ -218,6 +220,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.premium,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/messages',
+        name: Routes.messages,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const ConversationsScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: Routes.chat,
+            builder: (_, state) => ChatScreen(
+              conversationId: state.pathParameters['id']!,
+              peerName: state.uri.queryParameters['peer'],
+            ),
+          ),
+        ],
       ),
     ],
   );

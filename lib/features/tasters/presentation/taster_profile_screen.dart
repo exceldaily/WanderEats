@@ -14,6 +14,9 @@ import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../authentication/presentation/auth_providers.dart';
 import '../../map/presentation/map_controller.dart';
+import '../../messaging/data/messaging_repository.dart';
+import '../../messaging/domain/messaging_models.dart';
+import '../../premium/domain/entitlements.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile.dart';
 import '../../profile/presentation/widgets/profile_header.dart';
@@ -129,6 +132,7 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                                 .read(followingIdsProvider.notifier)
                                 .toggle(p.id),
                           ),
+                        if (!isMe) _MessageButton(peer: p),
                       ],
                     ),
                   ),
@@ -269,6 +273,92 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
         },
       ),
     );
+  }
+}
+
+/// The Message entry point, shaped by the server's dm_denial() answer.
+///
+/// Renders nothing until the availability is known and nothing for the
+/// denials no button could honestly fix: a minor must never see messaging
+/// dangled behind a paywall, and "this person can't be messaged" (blocks,
+/// gone accounts) deserves silence rather than an explanation. The only
+/// denials that keep the button are the two the user can act on - upgrade,
+/// or confirm their age in Settings.
+class _MessageButton extends ConsumerWidget {
+  const _MessageButton({required this.peer});
+
+  final Profile peer;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final availability = ref.watch(dmAvailabilityProvider(peer.id)).value;
+    final onPressed = switch (availability) {
+      DmAllowed() => () => _open(context, ref),
+      DmDenied(denial: final d) when d.canBeSolvedByUpgrading =>
+        () => context.pushNamed(Routes.premium),
+      DmDenied(denial: EntitlementDenial.ageUnconfirmed) =>
+        () => _promptAgeConfirmation(context),
+      _ => null,
+    };
+    if (onPressed == null) return const SizedBox.shrink();
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+      label: const Text('Message'),
+    );
+  }
+
+  Future<void> _open(BuildContext context, WidgetRef ref) async {
+    try {
+      final conversationId = await ref
+          .read(messagingRepositoryProvider)
+          .startConversation(peer.id);
+      if (!context.mounted) return;
+      unawaited(
+        context.pushNamed(
+          Routes.chat,
+          pathParameters: {'id': conversationId},
+          queryParameters: {'peer': peer.displayName},
+        ),
+      );
+    } on DmException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ref.invalidate(dmAvailabilityProvider(peer.id));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the conversation.')),
+      );
+    }
+  }
+
+  Future<void> _promptAgeConfirmation(BuildContext context) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm your age'),
+        content: const Text(
+          'Messaging is available to adults (18+). Confirm your date of '
+          'birth in Settings to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+    if (go == true && context.mounted) {
+      unawaited(context.pushNamed(Routes.settings));
+    }
   }
 }
 

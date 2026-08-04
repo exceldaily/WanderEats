@@ -91,6 +91,11 @@ class NotificationRepository {
     switch (n.type) {
       case 'follow':
         return n.actorId == null ? null : ('taster', {'id': n.actorId!});
+      case 'message':
+        final conversationId = n.payload['conversation_id'] as String?;
+        return conversationId == null
+            ? null
+            : ('chat', {'id': conversationId});
       case 'list_invite':
       case 'list_update':
       case 'saved_list_update':
