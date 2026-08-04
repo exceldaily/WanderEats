@@ -25,6 +25,31 @@ class EntitlementService {
       throw ServerException(cause: e);
     }
   }
+
+  Future<AgeStatus> ageStatus() async {
+    try {
+      final json = await _schema.rpc<Map<String, dynamic>>('my_age_status');
+      return AgeStatus.fromJson(json);
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
+  /// Records the date of birth, once. The server refuses owner-side changes
+  /// afterwards, which is why there is no corresponding update method.
+  Future<void> confirmDateOfBirth(String userId, DateTime dateOfBirth) async {
+    try {
+      await _schema.from('profile_private').insert({
+        'user_id': userId,
+        'date_of_birth':
+            '${dateOfBirth.year.toString().padLeft(4, '0')}-'
+            '${dateOfBirth.month.toString().padLeft(2, '0')}-'
+            '${dateOfBirth.day.toString().padLeft(2, '0')}',
+      });
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
 }
 
 final entitlementServiceProvider = Provider<EntitlementService>(
@@ -62,3 +87,31 @@ bool hasEntitlement(WidgetRef ref, PremiumEntitlement entitlement) {
 final isPremiumProvider = Provider<bool>(
   (ref) => ref.watch(entitlementsProvider).value?.isPremium ?? false,
 );
+
+/// The current user's age status. Fails closed the same way entitlements do:
+/// an unreachable backend reads as "unconfirmed", never as "adult".
+final ageStatusProvider = FutureProvider<AgeStatus>((ref) async {
+  final session = ref.watch(sessionProvider);
+  if (session == null) return const AgeStatus.unknown();
+  try {
+    return await ref.watch(entitlementServiceProvider).ageStatus();
+  } on AppException {
+    return const AgeStatus.unknown();
+  }
+});
+
+/// Why [entitlement] is unavailable right now, or null when it is usable.
+///
+/// This is THE gate every age-restricted or premium surface must consult
+/// before showing an upgrade path: when the result's `canBeSolvedByUpgrading`
+/// is false, routing to the paywall is a bug, not a sales opportunity. The
+/// server re-checks everything on each privileged call, so a stale answer here
+/// can only under-promise, never over-grant.
+EntitlementDenial? denialFor(WidgetRef ref, PremiumEntitlement entitlement) {
+  return computeDenial(
+    signedIn: ref.watch(isSignedInProvider),
+    age: ref.watch(ageStatusProvider).value ?? const AgeStatus.unknown(),
+    entitlements: ref.watch(entitlementsProvider).value ?? const Entitlements.none(),
+    entitlement: entitlement,
+  );
+}

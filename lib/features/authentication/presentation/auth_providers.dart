@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/services/push/push_service.dart';
+import '../../premium/data/entitlement_service.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile.dart';
 import '../data/auth_repository.dart';
@@ -51,6 +52,7 @@ class MyProfileController extends AsyncNotifier<Profile?> {
     String? homeCityId,
     List<String> favoriteCuisines = const [],
     String? avatarUrl,
+    DateTime? dateOfBirth,
   }) async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
@@ -66,6 +68,17 @@ class MyProfileController extends AsyncNotifier<Profile?> {
           avatarUrl: avatarUrl,
         );
     state = AsyncData(profile);
+    // Best-effort like the avatar: a failed write leaves the account in the
+    // fail-closed "age unconfirmed" state, which Settings can fix later, and
+    // must never block account creation.
+    if (dateOfBirth != null) {
+      try {
+        await ref
+            .read(entitlementServiceProvider)
+            .confirmDateOfBirth(session.user.id, dateOfBirth);
+        ref.invalidate(ageStatusProvider);
+      } catch (_) {}
+    }
     unawaited(ref.read(pushServiceProvider).enableForCurrentUser());
   }
 

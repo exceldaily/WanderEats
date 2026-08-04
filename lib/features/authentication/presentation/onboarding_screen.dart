@@ -15,8 +15,9 @@ import '../../profile/data/profile_repository.dart';
 import '../../restaurants/data/reference_repository.dart';
 import 'auth_providers.dart';
 
-/// Visual, brief onboarding: identity -> photo -> home city -> cuisines.
-/// Photo, city and cuisines are skippable; identity is not.
+/// Visual, brief onboarding: identity -> birthday -> photo -> home city ->
+/// cuisines. Photo, city and cuisines are skippable; identity and birthday
+/// are not.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -27,11 +28,16 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   int _step = 0;
-  static const _stepCount = 4;
+  static const _stepCount = 5;
+
+  /// The minimum age to use WanderBites at all. Mirrors the server's
+  /// min_age_years(); the trigger on profile_private enforces it again.
+  static const _minAgeYears = 13;
 
   final _displayName = TextEditingController();
   final _username = TextEditingController();
   final _bio = TextEditingController();
+  DateTime? _birthDate;
   File? _avatarFile;
   String? _homeCityId;
   final Set<String> _cuisineIds = {};
@@ -57,6 +63,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         RegExp(r'^[a-z0-9_]{3,24}$').hasMatch(username) &&
         _usernameAvailable == true;
   }
+
+  bool get _birthDateTooRecent {
+    final d = _birthDate;
+    if (d == null) return false;
+    final now = DateTime.now();
+    return d.isAfter(DateTime(now.year - _minAgeYears, now.month, now.day));
+  }
+
+  bool get _birthDateValid => _birthDate != null && !_birthDateTooRecent;
+
+  /// Whether the Continue button is enabled on the current step. Identity and
+  /// birthday are the two hard gates; everything after is skippable.
+  bool get _stepValid => switch (_step) {
+    0 => _identityValid,
+    1 => _birthDateValid,
+    _ => true,
+  };
 
   void _checkUsername(String value) {
     _usernameDebounce?.cancel();
@@ -128,6 +151,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             homeCityId: _homeCityId,
             favoriteCuisines: _cuisineIds.toList(),
             avatarUrl: avatarUrl,
+            dateOfBirth: _birthDate,
           );
       await ref.read(analyticsProvider).onboardingCompleted();
       if (mounted) context.goNamed(Routes.map);
@@ -185,6 +209,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   onPageChanged: (i) => setState(() => _step = i),
                   children: [
                     _identityStep(theme),
+                    _birthdayStep(theme),
                     _photoStep(theme),
                     _cityStep(theme),
                     _cuisineStep(theme),
@@ -205,9 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                       ),
                     FilledButton(
-                      onPressed: _busy
-                          ? null
-                          : (_step == 0 && !_identityValid ? null : _next),
+                      onPressed: _busy || !_stepValid ? null : _next,
                       child: _busy
                           ? const SizedBox(
                               height: 20,
@@ -218,7 +241,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               _step == _stepCount - 1 ? 'Finish' : 'Continue',
                             ),
                     ),
-                    if (_step > 0 && _step < _stepCount)
+                    // The birthday step (1) is deliberately not skippable:
+                    // 18+ features stay locked without it, and asking once
+                    // here beats interrupting people mid-feature later.
+                    if (_step > 1 && _step < _stepCount)
                       TextButton(
                         onPressed: _busy ? null : _next,
                         child: const Text('Skip for now'),
@@ -289,6 +315,57 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             helperText: 'What kind of eater are you?',
           ),
         ),
+      ],
+    );
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'When were you born?',
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked != null) setState(() => _birthDate = picked);
+  }
+
+  Widget _birthdayStep(ThemeData theme) {
+    final d = _birthDate;
+    return ListView(
+      padding: const EdgeInsets.all(WbSpacing.lg),
+      children: [
+        Text('When were you born?', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: WbSpacing.sm),
+        Text(
+          'Your birthday is never shown to anyone. It unlocks age-restricted '
+          'features like messaging (18+) and cannot be changed later.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: WbSpacing.lg),
+        OutlinedButton.icon(
+          onPressed: _pickBirthDate,
+          icon: const Icon(Icons.cake_outlined),
+          label: Text(
+            d == null
+                ? 'Choose your date of birth'
+                : MaterialLocalizations.of(context).formatFullDate(d),
+          ),
+        ),
+        if (_birthDateTooRecent)
+          Padding(
+            padding: const EdgeInsets.only(top: WbSpacing.sm),
+            child: Text(
+              'WanderBites requires users to be at least '
+              '$_minAgeYears years old.',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
       ],
     );
   }

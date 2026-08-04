@@ -14,6 +14,11 @@ enum PremiumEntitlement {
 
   final String code;
 
+  /// Mirrors the server's adults_only_entitlements() list. The server strips
+  /// these from my_entitlements() for non-adults, so this flag only decides
+  /// which refusal to show - it is not the enforcement.
+  bool get adultsOnly => this == PremiumEntitlement.directMessaging;
+
   static PremiumEntitlement? fromCode(String code) {
     for (final e in values) {
       if (e.code == code) return e;
@@ -40,6 +45,57 @@ enum EntitlementDenial {
   /// cannot fix an age restriction, and implying it can would be worse than
   /// unhelpful.
   bool get canBeSolvedByUpgrading => this == EntitlementDenial.premiumRequired;
+}
+
+/// The server's answer to "has this user confirmed a date of birth, and are
+/// they an adult?" - the two halves of `my_age_status()`.
+///
+/// They stay separate because they demand different responses: unconfirmed
+/// gets a "confirm your age" prompt, while a confirmed minor gets a refusal
+/// that must never suggest buying anything. The raw date of birth deliberately
+/// never reaches this model; the app only ever needs the verdict.
+class AgeStatus {
+  const AgeStatus({required this.confirmed, required this.adult});
+
+  /// The fail-closed default: unknown reads as "not confirmed, not adult".
+  const AgeStatus.unknown() : confirmed = false, adult = false;
+
+  factory AgeStatus.fromJson(Map<String, dynamic> json) => AgeStatus(
+    confirmed: json['confirmed'] == true,
+    adult: json['adult'] == true,
+  );
+
+  final bool confirmed;
+  final bool adult;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AgeStatus &&
+      other.confirmed == confirmed &&
+      other.adult == adult;
+
+  @override
+  int get hashCode => Object.hash(confirmed, adult);
+}
+
+/// The one place the denial rules live, kept pure so they can be tested
+/// without Riverpod. Order is the point: age comes before payment so a minor
+/// is refused as [EntitlementDenial.ageRestricted] even when unpaid - showing
+/// them [EntitlementDenial.premiumRequired] would put a purchase screen in
+/// front of a feature they can never have.
+EntitlementDenial? computeDenial({
+  required bool signedIn,
+  required AgeStatus age,
+  required Entitlements entitlements,
+  required PremiumEntitlement entitlement,
+}) {
+  if (!signedIn) return EntitlementDenial.notSignedIn;
+  if (entitlement.adultsOnly) {
+    if (!age.confirmed) return EntitlementDenial.ageUnconfirmed;
+    if (!age.adult) return EntitlementDenial.ageRestricted;
+  }
+  if (!entitlements.has(entitlement)) return EntitlementDenial.premiumRequired;
+  return null;
 }
 
 /// The signed-in user's paid access, as computed by the server.

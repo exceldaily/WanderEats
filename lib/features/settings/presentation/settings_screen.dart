@@ -9,6 +9,8 @@ import '../../../core/errors/app_exception.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../premium/data/entitlement_service.dart';
+import '../../premium/domain/entitlements.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../safety/presentation/blocked_accounts_screen.dart';
 
@@ -110,11 +112,18 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.workspace_premium_outlined),
                   title: const Text('WanderBites Premium'),
-                  subtitle: const Text(
-                    'Messaging, Taste Groups, trip planning and more',
+                  // A confirmed minor still may subscribe, but messaging must
+                  // never be dangled in front of them as part of the pitch.
+                  subtitle: Text(
+                    (ref.watch(ageStatusProvider).value?.confirmed ?? false) &&
+                            !(ref.watch(ageStatusProvider).value?.adult ??
+                                false)
+                        ? 'Taste Groups, trip planning and more'
+                        : 'Messaging, Taste Groups, trip planning and more',
                   ),
                   onTap: () => context.pushNamed(Routes.premium),
                 ),
+                const _DateOfBirthTile(),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
                   title: Text(l10n.settingsEditProfile),
@@ -193,6 +202,89 @@ class SettingsScreen extends ConsumerWidget {
     try {
       await ref.read(authRepositoryProvider).deleteAccount();
       if (context.mounted) context.goNamed(Routes.welcome);
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
+  }
+}
+
+/// Date-of-birth row. Unconfirmed accounts (anyone who onboarded before the
+/// age gate shipped) can set it once; confirmed accounts see a locked state,
+/// because self-service edits would defeat the 18+ gate.
+class _DateOfBirthTile extends ConsumerWidget {
+  const _DateOfBirthTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final age = ref.watch(ageStatusProvider).value ?? const AgeStatus.unknown();
+    return ListTile(
+      leading: const Icon(Icons.cake_outlined),
+      title: const Text('Date of birth'),
+      subtitle: Text(
+        age.confirmed
+            ? 'Confirmed. Contact support to correct it.'
+            : 'Confirm your age to unlock 18+ features',
+      ),
+      trailing: age.confirmed ? const Icon(Icons.lock_outline, size: 18) : null,
+      onTap: age.confirmed ? null : () => _confirm(context, ref),
+    );
+  }
+
+  Future<void> _confirm(BuildContext context, WidgetRef ref) async {
+    final session = ref.read(sessionProvider);
+    if (session == null) return;
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'When were you born?',
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked == null || !context.mounted) return;
+    // Mirrors the server trigger so the refusal is friendly instead of a
+    // generic server error.
+    if (picked.isAfter(DateTime(now.year - 13, now.month, now.day))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WanderBites requires users to be at least 13 years old.'),
+        ),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm your date of birth'),
+        content: Text(
+          '${MaterialLocalizations.of(context).formatFullDate(picked)}\n\n'
+          'This cannot be changed later without contacting support.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref
+          .read(entitlementServiceProvider)
+          .confirmDateOfBirth(session.user.id, picked);
+      ref.invalidate(ageStatusProvider);
+      ref.invalidate(entitlementsProvider);
     } on AppException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

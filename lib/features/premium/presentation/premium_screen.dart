@@ -167,18 +167,25 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   }
 }
 
-class _Pitch extends StatelessWidget {
+class _Pitch extends ConsumerWidget {
   const _Pitch();
 
   static const _features = [
-    (Icons.chat_bubble_outline, 'Message other Tasters'),
+    (Icons.chat_bubble_outline, 'Message other Tasters (18+)'),
     (Icons.groups_outlined, 'Create Taste Groups'),
     (Icons.map_outlined, 'Plan multi-stop food trips'),
     (Icons.auto_awesome_outlined, 'Customize your profile'),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // A confirmed minor may still subscribe for the other features, but
+    // messaging must not be part of what is being sold to them.
+    final age = ref.watch(ageStatusProvider).value;
+    final isConfirmedMinor = (age?.confirmed ?? false) && !(age?.adult ?? true);
+    final features = isConfirmedMinor
+        ? _features.where((f) => f.$1 != Icons.chat_bubble_outline)
+        : _features;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -189,7 +196,7 @@ class _Pitch extends StatelessWidget {
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: WbSpacing.md),
-        for (final (icon, label) in _features)
+        for (final (icon, label) in features)
           Padding(
             padding: const EdgeInsets.only(bottom: WbSpacing.sm),
             child: Row(
