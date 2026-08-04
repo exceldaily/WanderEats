@@ -34,4 +34,6 @@ abstract final class Routes {
   static const premium = 'premium';
   static const messages = 'messages';
   static const chat = 'chat';
+  static const tasteGroups = 'taste-groups';
+  static const tasteGroup = 'taste-group';
 }

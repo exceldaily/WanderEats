@@ -29,6 +29,8 @@ import '../../features/recommendations/presentation/create_recommendation_screen
 import '../../features/recommendations/presentation/edit_recommendation_loader.dart';
 import '../../features/restaurants/presentation/restaurant_details_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/taste_groups/presentation/group_detail_screen.dart';
+import '../../features/taste_groups/presentation/taste_groups_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
@@ -220,6 +222,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.premium,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/groups',
+        name: Routes.tasteGroups,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const TasteGroupsScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: Routes.tasteGroup,
+            builder: (_, state) =>
+                GroupDetailScreen(groupId: state.pathParameters['id']!),
+          ),
+        ],
       ),
       GoRoute(
         path: '/messages',

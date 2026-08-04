@@ -143,6 +143,30 @@ class _ForYouTab extends ConsumerWidget {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.md,
+              0,
+              WbSpacing.md,
+              WbSpacing.sm,
+            ),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.groups_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                title: const Text('Taste Groups'),
+                subtitle: const Text(
+                  'Small crews around a shared appetite. Join one, or start '
+                  'your own.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.pushNamed(Routes.tasteGroups),
+              ),
+            ),
+          ),
           _SectionHeader(title: 'Trending Tasters'),
           SizedBox(
             height: 120,
