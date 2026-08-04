@@ -32,6 +32,8 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/taste_groups/presentation/group_detail_screen.dart';
 import '../../features/taste_groups/presentation/taste_groups_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
+import '../../features/trips/presentation/trip_detail_screen.dart';
+import '../../features/trips/presentation/trips_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
 
@@ -222,6 +224,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.premium,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/trips',
+        name: Routes.trips,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const TripsScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: Routes.trip,
+            builder: (_, state) => TripDetailScreen(
+              tripId: state.pathParameters['id']!,
+              tripName: state.uri.queryParameters['name'],
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/groups',

@@ -167,6 +167,29 @@ class _ForYouTab extends ConsumerWidget {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.md,
+              0,
+              WbSpacing.md,
+              WbSpacing.sm,
+            ),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: Icon(
+                  Icons.map_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                title: const Text('Food Trips'),
+                subtitle: const Text(
+                  'Plan an eating itinerary: ordered stops and notes.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.pushNamed(Routes.trips),
+              ),
+            ),
+          ),
           _SectionHeader(title: 'Trending Tasters'),
           SizedBox(
             height: 120,
