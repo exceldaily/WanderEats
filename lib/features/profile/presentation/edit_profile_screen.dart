@@ -4,13 +4,17 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
+import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/storage/media_uploader.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../premium/data/entitlement_service.dart';
+import '../../premium/domain/entitlements.dart';
 import '../../restaurants/data/reference_repository.dart';
 import 'widgets/profile_header.dart';
 
@@ -116,6 +120,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         if (mounted) setState(() => _citySearching = false);
       }
     });
+  }
+
+  bool get _hasPremiumLayouts =>
+      hasEntitlement(ref, PremiumEntitlement.premiumProfileLayouts);
+
+  /// Premium swatch tap: apply it with the entitlement, otherwise route to
+  /// the paywall. This is a pure premium gate - age never applies to profile
+  /// looks, so canBeSolvedByUpgrading is always true here.
+  void _pickPremium(VoidCallback apply) {
+    if (_hasPremiumLayouts) {
+      apply();
+    } else {
+      unawaited(context.pushNamed(Routes.premium));
+    }
   }
 
   Future<void> _save() async {
@@ -341,17 +359,37 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   selected: _bannerDesign == design,
                   onTap: () => setState(() => _bannerDesign = design),
                 ),
+              for (final design in kPremiumBannerDesigns)
+                BannerDesignSwatch(
+                  design: design,
+                  color: _bannerColor,
+                  selected: _bannerDesign == design,
+                  locked: !_hasPremiumLayouts,
+                  onTap: () => _pickPremium(
+                    () => setState(() => _bannerDesign = design),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: WbSpacing.sm),
           Wrap(
             spacing: WbSpacing.sm,
+            runSpacing: WbSpacing.sm,
             children: [
               for (final color in kBannerColors)
                 BannerColorSwatch(
                   color: color,
                   selected: _bannerColor == color,
                   onTap: () => setState(() => _bannerColor = color),
+                ),
+              for (final color in kPremiumBannerColors)
+                BannerColorSwatch(
+                  color: color,
+                  selected: _bannerColor == color,
+                  locked: !_hasPremiumLayouts,
+                  onTap: () => _pickPremium(
+                    () => setState(() => _bannerColor = color),
+                  ),
                 ),
             ],
           ),

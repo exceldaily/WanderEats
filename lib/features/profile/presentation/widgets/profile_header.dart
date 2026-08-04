@@ -244,6 +244,17 @@ const kBannerColors = [
   'sunset',
 ];
 
+/// Premium-only palettes and patterns (M6). Selectable only with the
+/// premium_profile_layouts entitlement; the profiles guard trigger enforces
+/// the same rule server-side, so a hacked client gains nothing. Anyone can
+/// still SEE them on other people's profiles - that is the point of them.
+const kPremiumBannerColors = ['aurora', 'rosegold', 'obsidian', 'lagoon'];
+const kPremiumBannerDesigns = ['wander', 'feast'];
+
+bool bannerChoiceIsPremium(String design, String color) =>
+    kPremiumBannerDesigns.contains(design) ||
+    kPremiumBannerColors.contains(color);
+
 ({Color a, Color b}) bannerPalette(String color) => switch (color) {
   'ember' => (a: const Color(0xFFB3402A), b: WbColors.ember),
   'gold' => (a: const Color(0xFF9A6A0F), b: WbColors.warning),
@@ -252,6 +263,10 @@ const kBannerColors = [
   'berry' => (a: const Color(0xFF6B2D5C), b: const Color(0xFFB5507E)),
   'herb' => (a: const Color(0xFF3D6B3F), b: const Color(0xFF6FA05A)),
   'sunset' => (a: const Color(0xFFB3521E), b: const Color(0xFFE8935A)),
+  'aurora' => (a: const Color(0xFF0F5F5A), b: const Color(0xFF7C4DBD)),
+  'rosegold' => (a: const Color(0xFF9C5560), b: const Color(0xFFE3B7A0)),
+  'obsidian' => (a: const Color(0xFF0E1216), b: const Color(0xFF44586A)),
+  'lagoon' => (a: const Color(0xFF0E5E6F), b: const Color(0xFF63C7B2)),
   _ => (a: WbColors.voyage, b: WbColors.voyageLight),
 };
 
@@ -264,6 +279,8 @@ String bannerDesignLabel(String design) => switch (design) {
   'bbq' => 'BBQ',
   'coffee' => 'Coffee',
   'pizza' => 'Pizza',
+  'wander' => 'Wander',
+  'feast' => 'Feast',
   _ => 'Classic',
 };
 
@@ -279,6 +296,18 @@ List<IconData> _bannerGlyphs(String design) => switch (design) {
     Icons.bakery_dining_outlined,
   ],
   'pizza' => const [Icons.local_pizza_outlined],
+  'wander' => const [
+    Icons.flight_takeoff,
+    Icons.public,
+    Icons.explore_outlined,
+    Icons.map_outlined,
+  ],
+  'feast' => const [
+    Icons.restaurant,
+    Icons.dinner_dining_outlined,
+    Icons.brunch_dining_outlined,
+    Icons.wine_bar_outlined,
+  ],
   _ => const [
     Icons.ramen_dining_outlined,
     Icons.local_pizza_outlined,
@@ -339,11 +368,16 @@ class BannerColorSwatch extends StatelessWidget {
     required this.color,
     required this.selected,
     required this.onTap,
+    this.locked = false,
   });
 
   final String color;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Premium swatch without the entitlement: still tappable (the parent
+  /// routes to the paywall), but visually marked as locked.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +386,9 @@ class BannerColorSwatch extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Banner color $color',
+      label: locked
+          ? 'Banner color $color, Premium'
+          : 'Banner color $color',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(WbRadius.chip),
@@ -371,6 +407,8 @@ class BannerColorSwatch extends StatelessWidget {
           ),
           child: selected
               ? const Icon(Icons.check, size: 18, color: Colors.white)
+              : locked
+              ? const Icon(Icons.lock_outline, size: 14, color: Colors.white70)
               : null,
         ),
       ),
@@ -388,6 +426,7 @@ class BannerDesignSwatch extends StatelessWidget {
     required this.color,
     required this.selected,
     required this.onTap,
+    this.locked = false,
   });
 
   final String design;
@@ -395,13 +434,18 @@ class BannerDesignSwatch extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// See [BannerColorSwatch.locked].
+  final bool locked;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Banner design ${bannerDesignLabel(design)}',
+      label: locked
+          ? 'Banner design ${bannerDesignLabel(design)}, Premium'
+          : 'Banner design ${bannerDesignLabel(design)}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(WbRadius.chip),
@@ -423,8 +467,25 @@ class BannerDesignSwatch extends StatelessWidget {
                 borderRadius: BorderRadius.circular(WbRadius.chip - 3),
                 child: SizedBox(
                   height: 40,
-                  child: _BrandBanner(
-                    bannerStyle: composeBannerStyle(design, color),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _BrandBanner(
+                        bannerStyle: composeBannerStyle(design, color),
+                      ),
+                      if (locked)
+                        const Align(
+                          alignment: Alignment.topRight,
+                          child: Padding(
+                            padding: EdgeInsets.all(3),
+                            child: Icon(
+                              Icons.lock_outline,
+                              size: 13,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

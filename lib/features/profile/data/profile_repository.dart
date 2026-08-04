@@ -114,6 +114,13 @@ class ProfileRepository {
       ).update(patch).eq('id', userId).select().single();
       return Profile.fromJson(row);
     } on PostgrestException catch (e) {
+      // The profiles guard trigger refuses premium banner styles without the
+      // entitlement; surface that as a sentence, not a stack trace.
+      if (e.message.contains('premium_denied')) {
+        throw const PermissionDeniedException(
+          'That profile style needs WanderBites Premium.',
+        );
+      }
       throw ServerException(cause: e);
     }
   }
