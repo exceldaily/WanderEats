@@ -108,6 +108,14 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 _Header(l10n.settingsAccount),
                 ListTile(
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                  title: const Text('WanderBites Premium'),
+                  subtitle: const Text(
+                    'Messaging, Taste Groups, trip planning and more',
+                  ),
+                  onTap: () => context.pushNamed(Routes.premium),
+                ),
+                ListTile(
                   leading: const Icon(Icons.edit_outlined),
                   title: Text(l10n.settingsEditProfile),
                   onTap: () => context.pushNamed(Routes.editProfile),

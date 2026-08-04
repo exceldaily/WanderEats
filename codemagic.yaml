@@ -87,6 +87,7 @@ workflows:
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define=SUPABASE_SCHEMA="$SUPABASE_SCHEMA" \
             --dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY_IOS" \
+            --dart-define=REVENUECAT_IOS_API_KEY=appl_yWEShWiSacjAPaXvIEPCnVHAIZG \
             --dart-define=APP_ENV=production \
             --export-options-plist=/Users/builder/export_options.plist
 

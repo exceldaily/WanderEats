@@ -2,7 +2,7 @@ name: wanderbites
 description: "WanderBites - social travel map for food discovery. Follow people with great taste, discover unforgettable places."
 publish_to: 'none'
 
-version: 1.0.0+7
+version: 1.0.0+8
 
 environment:
   sdk: ^3.12.2
@@ -28,6 +28,11 @@ dependencies:
 
   # Backend
   supabase_flutter: ^2.9.0
+
+  # Billing. RevenueCat validates receipts with Apple/Google and reports to
+  # the revenuecat-webhook edge function, which is the only writer of
+  # subscription state; this SDK is presentation + purchase UX, never truth.
+  purchases_flutter: ^9.0.0
 
   # Maps + location
   google_maps_flutter: ^2.12.0

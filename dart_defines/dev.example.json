@@ -3,5 +3,7 @@
   "SUPABASE_PUBLISHABLE_KEY": "<sb_publishable_... key from the shared OrbitStack Supabase project>",
   "SUPABASE_SCHEMA": "wanderbites",
   "GOOGLE_MAPS_API_KEY": "",
+  "REVENUECAT_IOS_API_KEY": "<appl_... public SDK key from RevenueCat > API keys>",
+  "REVENUECAT_ANDROID_API_KEY": "",
   "APP_ENV": "development"
 }

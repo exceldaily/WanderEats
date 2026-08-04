@@ -18,6 +18,7 @@ import '../../features/lists/presentation/create_list_screen.dart';
 import '../../features/lists/presentation/list_details_screen.dart';
 import '../../features/map/presentation/map_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/restaurant_collection_screen.dart';
@@ -211,6 +212,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.editProfile,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/premium',
+        name: Routes.premium,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const PremiumScreen(),
       ),
     ],
   );

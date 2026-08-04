@@ -31,4 +31,5 @@ abstract final class Routes {
   static const visitedRestaurants = 'visited';
   static const settings = 'settings';
   static const editProfile = 'edit-profile';
+  static const premium = 'premium';
 }
