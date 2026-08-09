@@ -147,7 +147,12 @@ class BillingService {
       case PurchasesErrorCode.storeProblemError:
         return 'The store had a problem. Try again in a moment.';
       default:
-        return 'The purchase could not be completed. Try again.';
+        // The code name is deliberately included: "could not be completed"
+        // alone has already cost a debugging round-trip, and during testing
+        // the person reading this IS the developer.
+        return 'The purchase could not be completed '
+            '(${PurchasesErrorHelper.getErrorCode(e).name}: '
+            '${e.message ?? 'no detail'}). Try again.';
     }
   }
 }
