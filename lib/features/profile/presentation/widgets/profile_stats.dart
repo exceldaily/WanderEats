@@ -12,10 +12,17 @@ class ProfileStats extends StatelessWidget {
     super.key,
     required this.stats,
     this.showFollowing = true,
+    this.onFollowersTap,
+    this.onFollowingTap,
   });
 
   final Map<String, dynamic>? stats;
   final bool showFollowing;
+
+  /// When set, the followers / following cells become tappable and open the
+  /// corresponding list.
+  final VoidCallback? onFollowersTap;
+  final VoidCallback? onFollowingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -27,42 +34,51 @@ class ProfileStats extends StatelessWidget {
       required String label,
       required Object? value,
       Color? emphasis,
+      VoidCallback? onTap,
     }) {
       final display = value == null ? '—' : '$value';
-      return Expanded(
-        child: Semantics(
-          label: '$label: $display',
-          excludeSemantics: true,
-          child: Column(
+      final content = Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 15,
-                    color: emphasis ?? theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    display,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: emphasis,
-                    ),
-                  ),
-                ],
+              Icon(
+                icon,
+                size: 15,
+                color: emphasis ?? theme.colorScheme.onSurfaceVariant,
               ),
+              const SizedBox(width: 4),
               Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                display,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: emphasis,
                 ),
               ),
             ],
           ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
+      return Expanded(
+        child: Semantics(
+          label: '$label: $display',
+          button: onTap != null,
+          excludeSemantics: true,
+          child: onTap == null
+              ? content
+              : InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(WbRadius.chip),
+                  child: content,
+                ),
         ),
       );
     }
@@ -88,12 +104,14 @@ class ProfileStats extends StatelessWidget {
                   icon: Icons.group_outlined,
                   label: 'Followers',
                   value: s?['followers'],
+                  onTap: onFollowersTap,
                 ),
                 if (showFollowing)
                   cell(
                     icon: Icons.person_add_alt_outlined,
                     label: 'Following',
                     value: s?['following'],
+                    onTap: onFollowingTap,
                   ),
                 cell(
                   icon: Icons.rate_review_outlined,

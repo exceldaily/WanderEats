@@ -110,7 +110,19 @@ class ProfileScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ProfileStats(stats: stats),
+                      ProfileStats(
+                        stats: stats,
+                        onFollowersTap: () => context.pushNamed(
+                          Routes.follows,
+                          pathParameters: {'id': p.id},
+                          queryParameters: {'name': p.displayName, 'tab': '0'},
+                        ),
+                        onFollowingTap: () => context.pushNamed(
+                          Routes.follows,
+                          pathParameters: {'id': p.id},
+                          queryParameters: {'name': p.displayName, 'tab': '1'},
+                        ),
+                      ),
                       const SizedBox(height: WbSpacing.sm + 4),
                       TastePersonalityCard(
                         personality: p.tastePersonality,

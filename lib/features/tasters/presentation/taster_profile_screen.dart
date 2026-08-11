@@ -142,7 +142,25 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ProfileStats(stats: stats),
+                          ProfileStats(
+                            stats: stats,
+                            onFollowersTap: () => context.pushNamed(
+                              Routes.follows,
+                              pathParameters: {'id': p.id},
+                              queryParameters: {
+                                'name': p.displayName,
+                                'tab': '0',
+                              },
+                            ),
+                            onFollowingTap: () => context.pushNamed(
+                              Routes.follows,
+                              pathParameters: {'id': p.id},
+                              queryParameters: {
+                                'name': p.displayName,
+                                'tab': '1',
+                              },
+                            ),
+                          ),
                           if (p.tastePersonality.values.any(
                             (v) => (v as String?)?.trim().isNotEmpty ?? false,
                           )) ...[

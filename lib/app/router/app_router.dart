@@ -31,6 +31,7 @@ import '../../features/restaurants/presentation/restaurant_details_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/taste_groups/presentation/group_detail_screen.dart';
 import '../../features/taste_groups/presentation/taste_groups_screen.dart';
+import '../../features/tasters/presentation/follow_list_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
@@ -152,6 +153,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.taster,
         builder: (_, state) =>
             TasterProfileScreen(tasterId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'follows',
+            name: Routes.follows,
+            builder: (_, state) => FollowListScreen(
+              userId: state.pathParameters['id']!,
+              displayName: state.uri.queryParameters['name'],
+              initialTab:
+                  int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/list/:id',

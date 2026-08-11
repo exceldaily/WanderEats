@@ -38,4 +38,5 @@ abstract final class Routes {
   static const tasteGroup = 'taste-group';
   static const trips = 'trips';
   static const trip = 'trip';
+  static const follows = 'follows';
 }
