@@ -16,22 +16,25 @@ import '../../../profile/presentation/widgets/profile_header.dart';
 import '../../../restaurants/presentation/restaurant_actions.dart';
 import '../../data/recommendation_repository.dart';
 import '../../domain/recommendation.dart';
-
-final _feedbackProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>((ref, recId) {
-      final myId = ref.watch(sessionProvider)?.user.id;
-      return ref
-          .watch(recommendationRepositoryProvider)
-          .feedbackFor(recId, myId);
-    });
+import '../feedback_providers.dart';
 
 /// A recommendation, restaurant-first: the place leads (photo, name, where,
 /// price), the Taster's words follow, and the reviewer metadata sits in a
 /// quiet footer. Keeps the accuracy-feedback flow for visitors.
 class RecommendationCard extends ConsumerWidget {
-  const RecommendationCard({super.key, required this.recommendation});
+  const RecommendationCard({
+    super.key,
+    required this.recommendation,
+    this.feedbackOverride,
+  });
 
   final Recommendation recommendation;
+
+  /// Feedback entry prefetched by the surrounding list via
+  /// [recommendationFeedbackBatchProvider]. When set, the card renders from
+  /// it and never fires its own per-card query - the batch is what keeps a
+  /// feed at one feedback query instead of one per card.
+  final Map<String, dynamic>? feedbackOverride;
 
   void _openRestaurant(BuildContext context) => context.pushNamed(
     Routes.restaurant,
@@ -45,7 +48,9 @@ class RecommendationCard extends ConsumerWidget {
     final restaurant = recommendation.restaurant;
     final myId = ref.watch(sessionProvider)?.user.id;
     final isMine = myId == recommendation.userId;
-    final feedback = ref.watch(_feedbackProvider(recommendation.id)).value;
+    final feedback =
+        feedbackOverride ??
+        ref.watch(recommendationFeedbackProvider(recommendation.id)).value;
     final counts = (feedback?['counts'] as Map<String, dynamic>?) ?? {};
     final mine = feedback?['mine'] as String?;
     final positive =
@@ -363,6 +368,14 @@ class RecommendationCard extends ConsumerWidget {
     );
   }
 
+  /// Both feedback paths must be refreshed: the batch family so cards fed by
+  /// a list prefetch pick up the change, and the per-card provider for cards
+  /// rendered without an override.
+  void _refreshFeedback(WidgetRef ref) {
+    ref.invalidate(recommendationFeedbackProvider(recommendation.id));
+    ref.invalidate(recommendationFeedbackBatchProvider);
+  }
+
   /// Opens the edit form. On a successful save the surrounding lists are
   /// invalidated so the change is visible immediately rather than after a
   /// manual refresh.
@@ -372,7 +385,7 @@ class RecommendationCard extends ConsumerWidget {
       pathParameters: {'id': recommendation.id},
     );
     if (saved == true) {
-      ref.invalidate(_feedbackProvider(recommendation.id));
+      _refreshFeedback(ref);
     }
   }
 
@@ -423,7 +436,7 @@ class RecommendationCard extends ConsumerWidget {
               recommendationId: recommendation.id,
             ),
       );
-      ref.invalidate(_feedbackProvider(recommendation.id));
+      _refreshFeedback(ref);
     } on AppException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

@@ -78,6 +78,16 @@ android {
                 signingConfigs.getByName("release")
             else
                 signingConfigs.getByName("debug")
+
+            // R8: smaller download, obfuscated symbols. Keep rules for
+            // RevenueCat/Billing live in proguard-rules.pro; revisit that
+            // file whenever a release-only crash smells like reflection.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

@@ -16,6 +16,7 @@ import '../../lists/data/list_repository.dart';
 import '../../lists/domain/food_list.dart';
 import '../../profile/presentation/widgets/profile_header.dart';
 import '../../recommendations/domain/recommendation.dart';
+import '../../recommendations/presentation/feedback_providers.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../../restaurants/domain/restaurant.dart';
 import '../../tasters/presentation/follow_providers.dart';
@@ -286,9 +287,7 @@ class _ForYouTab extends ConsumerWidget {
                 .watch(suggestedTastersProvider)
                 .when(
                   loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: WbSpacing.md,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: WbSpacing.md),
                     child: WbSkeleton(height: 108),
                   ),
                   error: (_, _) => const SizedBox.shrink(),
@@ -451,30 +450,46 @@ class _FollowingTab extends ConsumerWidget {
         message: e.toString(),
         onRetry: () => ref.invalidate(followingFeedProvider),
       ),
-      data: (recs) => recs.isEmpty
-          ? const WbEmptyState(
-              icon: Icons.rss_feed,
-              title: 'Quiet in here',
-              message:
-                  'Follow some Tasters from Discover and their recommendations will appear.',
+      data: (recs) {
+        if (recs.isEmpty) {
+          return const WbEmptyState(
+            icon: Icons.rss_feed,
+            title: 'Quiet in here',
+            message:
+                'Follow some Tasters from Discover and their recommendations will appear.',
+          );
+        }
+        // One feedback query for the whole feed. The empty-map fallback keeps
+        // cards from firing their own per-card queries while the batch is
+        // still loading.
+        final feedback = ref
+            .watch(
+              recommendationFeedbackBatchProvider(
+                feedbackBatchKey(recs.map((r) => r.id)),
+              ),
             )
-          : RefreshIndicator(
-              onRefresh: () async => ref.invalidate(followingFeedProvider),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(WbSpacing.md),
-                itemCount: recs.length,
-                itemBuilder: (context, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: WbSpacing.sm),
-                  child: InkWell(
-                    onTap: () => context.pushNamed(
-                      Routes.restaurant,
-                      pathParameters: {'id': recs[i].restaurantId},
-                    ),
-                    child: RecommendationCard(recommendation: recs[i]),
-                  ),
+            .value;
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(followingFeedProvider),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(WbSpacing.md),
+            itemCount: recs.length,
+            itemBuilder: (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: WbSpacing.sm),
+              child: InkWell(
+                onTap: () => context.pushNamed(
+                  Routes.restaurant,
+                  pathParameters: {'id': recs[i].restaurantId},
+                ),
+                child: RecommendationCard(
+                  recommendation: recs[i],
+                  feedbackOverride: feedback?[recs[i].id] ?? const {},
                 ),
               ),
             ),
+          ),
+        );
+      },
     );
   }
 }
@@ -510,8 +525,7 @@ class _SuggestedTasterCard extends ConsumerWidget {
     );
 
     return InkWell(
-      onTap: () =>
-          context.pushNamed(Routes.taster, pathParameters: {'id': id}),
+      onTap: () => context.pushNamed(Routes.taster, pathParameters: {'id': id}),
       borderRadius: BorderRadius.circular(WbRadius.card),
       child: Container(
         width: 230,
@@ -533,7 +547,9 @@ class _SuggestedTasterCard extends ConsumerWidget {
                           taster['avatar_url'] as String,
                         ),
                   child: taster['avatar_url'] == null
-                      ? Text((taster['display_name'] as String).characters.first)
+                      ? Text(
+                          (taster['display_name'] as String).characters.first,
+                        )
                       : null,
                 ),
                 const SizedBox(width: WbSpacing.sm),
@@ -564,7 +580,8 @@ class _SuggestedTasterCard extends ConsumerWidget {
                             ),
                         ],
                       ),
-                      if (taster['is_demo'] == true) const DemoBadge(compact: true),
+                      if (taster['is_demo'] == true)
+                        const DemoBadge(compact: true),
                     ],
                   ),
                 ),

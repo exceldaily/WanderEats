@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/configuration/env.dart';
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
@@ -24,6 +25,7 @@ import '../../profile/presentation/widgets/profile_stats.dart';
 import '../../profile/presentation/widgets/taste_personality_card.dart';
 import '../../recommendations/data/recommendation_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
+import '../../recommendations/presentation/feedback_providers.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../../safety/domain/safety.dart';
 import '../../safety/presentation/safety_sheet.dart';
@@ -41,20 +43,60 @@ final tasterStatsProvider = FutureProvider.autoDispose
       (ref, id) => ref.watch(tasterRepositoryProvider).stats(id),
     );
 
-final isPopularTasterProvider = FutureProvider.autoDispose
-    .family<bool, String>(
-      (ref, id) => ref.watch(tasterRepositoryProvider).isPopular(id),
-    );
+final isPopularTasterProvider = FutureProvider.autoDispose.family<bool, String>(
+  (ref, id) => ref.watch(tasterRepositoryProvider).isPopular(id),
+);
 
 final tasterPlacesProvider = FutureProvider.autoDispose
     .family<List<TasterPlace>, String>(
       (ref, id) => ref.watch(tasterRepositoryProvider).places(id),
     );
 
-final tasterRecsProvider = FutureProvider.autoDispose
-    .family<List<Recommendation>, String>(
-      (ref, id) => ref.watch(recommendationRepositoryProvider).byUser(id),
+final tasterRecsProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      TasterRecsController,
+      ({List<Recommendation> recs, bool hasMore}),
+      String
+    >(TasterRecsController.new);
+
+/// Accumulates pages of a Taster's recommendations. hasMore mirrors whether
+/// the last fetched page came back full, which is the only signal the backend
+/// gives that another page might exist.
+class TasterRecsController
+    extends AsyncNotifier<({List<Recommendation> recs, bool hasMore})> {
+  TasterRecsController(this.tasterId);
+
+  final String tasterId;
+
+  static const _pageSize = 20;
+
+  @override
+  Future<({List<Recommendation> recs, bool hasMore})> build() async {
+    final page = await ref
+        .watch(recommendationRepositoryProvider)
+        .byUser(tasterId, limit: _pageSize);
+    return (recs: page, hasMore: page.length == _pageSize);
+  }
+
+  /// Appends the next page. Throws on failure so the caller can show the
+  /// snackbar; the already-loaded pages stay on screen either way.
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore) return;
+    // Read the repo before the await: touching ref after an async gap can
+    // throw if this notifier was disposed mid-flight (Riverpod 3).
+    final repo = ref.read(recommendationRepositoryProvider);
+    final next = await repo.byUser(
+      tasterId,
+      limit: _pageSize,
+      offset: current.recs.length,
     );
+    state = AsyncData((
+      recs: [...current.recs, ...next],
+      hasMore: next.length == _pageSize,
+    ));
+  }
+}
 
 /// Filter for the personal food map.
 enum PlaceFilter { all, recommended, visited, saved }
@@ -86,6 +128,17 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _loadMore() async {
+    try {
+      await ref.read(tasterRecsProvider(widget.tasterId).notifier).loadMore();
+    } on AppException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   Future<void> _toggleFollow(String tasterId) async {
@@ -229,30 +282,61 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                             child: Text('Could not load: $e'),
                           ),
                         ),
-                        data: (recs) => recs.isEmpty
-                            ? SliverToBoxAdapter(
-                                child: WbEmptyState(
-                                  icon: Icons.rate_review_outlined,
-                                  title: isMe
-                                      ? 'Your first recommendation will '
-                                            'appear here.'
-                                      : 'No recommendations yet',
+                        data: (page) {
+                          if (page.recs.isEmpty) {
+                            return SliverToBoxAdapter(
+                              child: WbEmptyState(
+                                icon: Icons.rate_review_outlined,
+                                title: isMe
+                                    ? 'Your first recommendation will '
+                                          'appear here.'
+                                    : 'No recommendations yet',
+                              ),
+                            );
+                          }
+                          // One feedback query for the whole page of cards.
+                          // The empty-map fallback keeps cards from firing
+                          // their own per-card queries while the batch is
+                          // still loading.
+                          final feedback = ref
+                              .watch(
+                                recommendationFeedbackBatchProvider(
+                                  feedbackBatchKey(page.recs.map((r) => r.id)),
                                 ),
                               )
-                            : SliverList.builder(
-                                itemCount: recs.length,
-                                itemBuilder: (context, i) => Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    WbSpacing.md,
-                                    0,
-                                    WbSpacing.md,
-                                    WbSpacing.sm,
+                              .value;
+                          return SliverList.builder(
+                            itemCount:
+                                page.recs.length + (page.hasMore ? 1 : 0),
+                            itemBuilder: (context, i) {
+                              if (i == page.recs.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(WbSpacing.md),
+                                  child: Center(
+                                    child: OutlinedButton(
+                                      onPressed: _loadMore,
+                                      child: const Text('Show more'),
+                                    ),
                                   ),
-                                  child: RecommendationCard(
-                                    recommendation: recs[i],
-                                  ),
+                                );
+                              }
+                              final rec = page.recs[i];
+                              return Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  WbSpacing.md,
+                                  0,
+                                  WbSpacing.md,
+                                  WbSpacing.sm,
                                 ),
-                              ),
+                                child: RecommendationCard(
+                                  recommendation: rec,
+                                  feedbackOverride:
+                                      feedback?[rec.id] ?? const {},
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                   const SliverToBoxAdapter(
                     child: SizedBox(height: WbSpacing.xl),

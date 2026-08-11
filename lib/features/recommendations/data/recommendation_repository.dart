@@ -209,6 +209,40 @@ class RecommendationRepository {
     return {'counts': counts, 'mine': mine};
   }
 
+  /// Feedback for many recommendations in one query, keyed by recommendation
+  /// id; each entry has the same shape as [feedbackFor]. Every requested id
+  /// gets an entry, so a card backed by this map never falls back to its own
+  /// per-card query just because nobody has rated yet.
+  Future<Map<String, Map<String, dynamic>>> feedbackForMany(
+    List<String> recommendationIds,
+    String? myUserId,
+  ) async {
+    if (recommendationIds.isEmpty) return const {};
+    try {
+      final rows = await _schema
+          .from('recommendation_feedback')
+          .select('recommendation_id, rating, user_id')
+          .inFilter('recommendation_id', recommendationIds);
+      final result = {
+        for (final id in recommendationIds)
+          id: <String, dynamic>{'counts': <String, int>{}, 'mine': null},
+      };
+      for (final row in rows) {
+        final entry = result[row['recommendation_id'] as String];
+        if (entry == null) continue;
+        final rating = row['rating'] as String;
+        final counts = entry['counts'] as Map<String, int>;
+        counts[rating] = (counts[rating] ?? 0) + 1;
+        if (myUserId != null && row['user_id'] == myUserId) {
+          entry['mine'] = rating;
+        }
+      }
+      return result;
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    }
+  }
+
   Future<void> submitFeedback({
     required String userId,
     required String recommendationId,

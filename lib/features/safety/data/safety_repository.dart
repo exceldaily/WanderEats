@@ -58,9 +58,14 @@ class SafetyRepository {
   /// the thing that actually enforces the block.
   Future<bool> isBlocked(String userId) async {
     try {
-      final blocked = await blockedAccounts();
-      return blocked.any((b) => b.id == userId);
-    } on AppException {
+      // Point lookup; the old version downloaded the whole block list and
+      // only checked one direction.
+      final blocked = await _schema.rpc<bool>(
+        'is_blocked',
+        params: {'target': userId},
+      );
+      return blocked;
+    } on PostgrestException {
       // A failed lookup should not make the profile unusable. The server
       // enforces the block regardless of what this returns.
       return false;

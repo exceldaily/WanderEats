@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,13 +9,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import 'configuration/env.dart';
 import 'router/app_router.dart';
+import 'router/routes.dart';
 import 'theme/wb_theme.dart';
 
-class WanderBitesApp extends ConsumerWidget {
+class WanderBitesApp extends ConsumerStatefulWidget {
   const WanderBitesApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WanderBitesApp> createState() => _WanderBitesAppState();
+}
+
+class _WanderBitesAppState extends ConsumerState<WanderBitesApp> {
+  StreamSubscription<RemoteMessage>? _pushTapSub;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_wirePushTaps());
+  }
+
+  /// Routes notification taps into the app. Every push corresponds to a row
+  /// in the in-app notification feed, so the feed is the always-valid landing
+  /// spot; per-item deep linking continues from the feed's own tap routing.
+  /// Without this, tapping a push just opened the app at the map.
+  Future<void> _wirePushTaps() async {
+    if (Firebase.apps.isEmpty) return; // dev clones run the no-op push stack
+    _pushTapSub = FirebaseMessaging.onMessageOpenedApp.listen(_openFromTap);
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) _openFromTap(initial);
+  }
+
+  void _openFromTap(RemoteMessage message) {
+    if (!mounted || !Env.isConfigured) return;
+    ref.read(appRouterProvider).goNamed(Routes.notifications);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_pushTapSub?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (!Env.isConfigured) {
       return MaterialApp(
         title: 'WanderBites',

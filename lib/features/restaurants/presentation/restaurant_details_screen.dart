@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/links/safe_link.dart';
 import '../../../core/services/analytics/analytics_service.dart';
 import '../../../core/utils/plural.dart';
@@ -15,6 +16,7 @@ import '../../monetization/data/conversion_repository.dart';
 import '../../monetization/domain/action_context.dart';
 import '../../recommendations/data/recommendation_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
+import '../../recommendations/presentation/feedback_providers.dart';
 import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../data/restaurant_repository.dart';
 import '../domain/restaurant.dart';
@@ -33,11 +35,51 @@ final _cuisinesProvider = FutureProvider.autoDispose
           ref.watch(restaurantRepositoryProvider).fetchCuisineNames(id),
     );
 
-final _recsProvider = FutureProvider.autoDispose
-    .family<List<Recommendation>, String>(
-      (ref, id) =>
-          ref.watch(recommendationRepositoryProvider).forRestaurant(id),
+final _recsProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      _RecsController,
+      ({List<Recommendation> recs, bool hasMore}),
+      String
+    >(_RecsController.new);
+
+/// Accumulates pages of recommendations for one restaurant. hasMore mirrors
+/// whether the last fetched page came back full, which is the only signal the
+/// backend gives that another page might exist.
+class _RecsController
+    extends AsyncNotifier<({List<Recommendation> recs, bool hasMore})> {
+  _RecsController(this.restaurantId);
+
+  final String restaurantId;
+
+  static const _pageSize = 20;
+
+  @override
+  Future<({List<Recommendation> recs, bool hasMore})> build() async {
+    final page = await ref
+        .watch(recommendationRepositoryProvider)
+        .forRestaurant(restaurantId, limit: _pageSize);
+    return (recs: page, hasMore: page.length == _pageSize);
+  }
+
+  /// Appends the next page. Throws on failure so the caller can show the
+  /// snackbar; the already-loaded pages stay on screen either way.
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore) return;
+    // Read the repo before the await: touching ref after an async gap can
+    // throw if this notifier was disposed mid-flight (Riverpod 3).
+    final repo = ref.read(recommendationRepositoryProvider);
+    final next = await repo.forRestaurant(
+      restaurantId,
+      limit: _pageSize,
+      offset: current.recs.length,
     );
+    state = AsyncData((
+      recs: [...current.recs, ...next],
+      hasMore: next.length == _pageSize,
+    ));
+  }
+}
 
 class RestaurantDetailsScreen extends ConsumerWidget {
   const RestaurantDetailsScreen({super.key, required this.restaurantId});
@@ -115,6 +157,18 @@ class RestaurantDetailsScreen extends ConsumerWidget {
           content: Text('Could not update. Check your connection.'),
         ),
       );
+    }
+  }
+
+  Future<void> _loadMore(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(_recsProvider(restaurantId).notifier).loadMore();
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
     }
   }
 
@@ -385,18 +439,47 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                       child: Text('Could not load recommendations: $e'),
                     ),
                   ),
-                  data: (recs) => SliverList.builder(
-                    itemCount: recs.length,
-                    itemBuilder: (context, i) => Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        WbSpacing.md,
-                        0,
-                        WbSpacing.md,
-                        WbSpacing.sm,
-                      ),
-                      child: RecommendationCard(recommendation: recs[i]),
-                    ),
-                  ),
+                  data: (page) {
+                    // One feedback query for the whole page of cards. The
+                    // empty-map fallback keeps cards from firing their own
+                    // per-card queries while the batch is still loading.
+                    final feedback = ref
+                        .watch(
+                          recommendationFeedbackBatchProvider(
+                            feedbackBatchKey(page.recs.map((r) => r.id)),
+                          ),
+                        )
+                        .value;
+                    return SliverList.builder(
+                      itemCount: page.recs.length + (page.hasMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i == page.recs.length) {
+                          return Padding(
+                            padding: const EdgeInsets.all(WbSpacing.md),
+                            child: Center(
+                              child: OutlinedButton(
+                                onPressed: () => _loadMore(context, ref),
+                                child: const Text('Show more'),
+                              ),
+                            ),
+                          );
+                        }
+                        final rec = page.recs[i];
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            WbSpacing.md,
+                            0,
+                            WbSpacing.md,
+                            WbSpacing.sm,
+                          ),
+                          child: RecommendationCard(
+                            recommendation: rec,
+                            feedbackOverride: feedback?[rec.id] ?? const {},
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
             const SliverToBoxAdapter(child: SizedBox(height: WbSpacing.xl)),
           ],
