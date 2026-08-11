@@ -26,6 +26,8 @@ abstract class Profile with _$Profile {
     @JsonKey(name: 'banner_style')
     @Default('classic:voyage')
     String bannerStyle,
+    // Vertical crop of the custom banner photo: 0 top, 0.5 center, 1 bottom.
+    @JsonKey(name: 'header_focus_y') @Default(0.5) double headerFocusY,
     @JsonKey(name: 'taste_personality')
     @Default(<String, dynamic>{})
     Map<String, dynamic> tastePersonality,

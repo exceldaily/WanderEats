@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Profile {
 
- String get id; String get username;@JsonKey(name: 'display_name') String get displayName; String? get bio;@JsonKey(name: 'avatar_url') String? get avatarUrl;@JsonKey(name: 'header_url') String? get headerUrl;@JsonKey(name: 'home_city_id') String? get homeCityId;@JsonKey(name: 'is_verified') bool get isVerified;@JsonKey(name: 'is_demo') bool get isDemo;@JsonKey(name: 'is_admin') bool get isAdmin;@JsonKey(name: 'onboarding_completed') bool get onboardingCompleted;@JsonKey(name: 'favorite_cuisines') List<String> get favoriteCuisines;@JsonKey(name: 'taste_tags') List<String> get tasteTags;@JsonKey(name: 'banner_style') String get bannerStyle;@JsonKey(name: 'taste_personality') Map<String, dynamic> get tastePersonality;@JsonKey(name: 'created_at') DateTime get createdAt;
+ String get id; String get username;@JsonKey(name: 'display_name') String get displayName; String? get bio;@JsonKey(name: 'avatar_url') String? get avatarUrl;@JsonKey(name: 'header_url') String? get headerUrl;@JsonKey(name: 'home_city_id') String? get homeCityId;@JsonKey(name: 'is_verified') bool get isVerified;@JsonKey(name: 'is_demo') bool get isDemo;@JsonKey(name: 'is_admin') bool get isAdmin;@JsonKey(name: 'onboarding_completed') bool get onboardingCompleted;@JsonKey(name: 'favorite_cuisines') List<String> get favoriteCuisines;@JsonKey(name: 'taste_tags') List<String> get tasteTags;@JsonKey(name: 'banner_style') String get bannerStyle;// Vertical crop of the custom banner photo: 0 top, 0.5 center, 1 bottom.
+@JsonKey(name: 'header_focus_y') double get headerFocusY;@JsonKey(name: 'taste_personality') Map<String, dynamic> get tastePersonality;@JsonKey(name: 'created_at') DateTime get createdAt;
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +29,16 @@ $ProfileCopyWith<Profile> get copyWith => _$ProfileCopyWithImpl<Profile>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.headerUrl, headerUrl) || other.headerUrl == headerUrl)&&(identical(other.homeCityId, homeCityId) || other.homeCityId == homeCityId)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&const DeepCollectionEquality().equals(other.favoriteCuisines, favoriteCuisines)&&const DeepCollectionEquality().equals(other.tasteTags, tasteTags)&&(identical(other.bannerStyle, bannerStyle) || other.bannerStyle == bannerStyle)&&const DeepCollectionEquality().equals(other.tastePersonality, tastePersonality)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.headerUrl, headerUrl) || other.headerUrl == headerUrl)&&(identical(other.homeCityId, homeCityId) || other.homeCityId == homeCityId)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&const DeepCollectionEquality().equals(other.favoriteCuisines, favoriteCuisines)&&const DeepCollectionEquality().equals(other.tasteTags, tasteTags)&&(identical(other.bannerStyle, bannerStyle) || other.bannerStyle == bannerStyle)&&(identical(other.headerFocusY, headerFocusY) || other.headerFocusY == headerFocusY)&&const DeepCollectionEquality().equals(other.tastePersonality, tastePersonality)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,displayName,bio,avatarUrl,headerUrl,homeCityId,isVerified,isDemo,isAdmin,onboardingCompleted,const DeepCollectionEquality().hash(favoriteCuisines),const DeepCollectionEquality().hash(tasteTags),bannerStyle,const DeepCollectionEquality().hash(tastePersonality),createdAt);
+int get hashCode => Object.hash(runtimeType,id,username,displayName,bio,avatarUrl,headerUrl,homeCityId,isVerified,isDemo,isAdmin,onboardingCompleted,const DeepCollectionEquality().hash(favoriteCuisines),const DeepCollectionEquality().hash(tasteTags),bannerStyle,headerFocusY,const DeepCollectionEquality().hash(tastePersonality),createdAt);
 
 @override
 String toString() {
-  return 'Profile(id: $id, username: $username, displayName: $displayName, bio: $bio, avatarUrl: $avatarUrl, headerUrl: $headerUrl, homeCityId: $homeCityId, isVerified: $isVerified, isDemo: $isDemo, isAdmin: $isAdmin, onboardingCompleted: $onboardingCompleted, favoriteCuisines: $favoriteCuisines, tasteTags: $tasteTags, bannerStyle: $bannerStyle, tastePersonality: $tastePersonality, createdAt: $createdAt)';
+  return 'Profile(id: $id, username: $username, displayName: $displayName, bio: $bio, avatarUrl: $avatarUrl, headerUrl: $headerUrl, homeCityId: $homeCityId, isVerified: $isVerified, isDemo: $isDemo, isAdmin: $isAdmin, onboardingCompleted: $onboardingCompleted, favoriteCuisines: $favoriteCuisines, tasteTags: $tasteTags, bannerStyle: $bannerStyle, headerFocusY: $headerFocusY, tastePersonality: $tastePersonality, createdAt: $createdAt)';
 }
 
 
@@ -48,7 +49,7 @@ abstract mixin class $ProfileCopyWith<$Res>  {
   factory $ProfileCopyWith(Profile value, $Res Function(Profile) _then) = _$ProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, String username,@JsonKey(name: 'display_name') String displayName, String? bio,@JsonKey(name: 'avatar_url') String? avatarUrl,@JsonKey(name: 'header_url') String? headerUrl,@JsonKey(name: 'home_city_id') String? homeCityId,@JsonKey(name: 'is_verified') bool isVerified,@JsonKey(name: 'is_demo') bool isDemo,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'onboarding_completed') bool onboardingCompleted,@JsonKey(name: 'favorite_cuisines') List<String> favoriteCuisines,@JsonKey(name: 'taste_tags') List<String> tasteTags,@JsonKey(name: 'banner_style') String bannerStyle,@JsonKey(name: 'taste_personality') Map<String, dynamic> tastePersonality,@JsonKey(name: 'created_at') DateTime createdAt
+ String id, String username,@JsonKey(name: 'display_name') String displayName, String? bio,@JsonKey(name: 'avatar_url') String? avatarUrl,@JsonKey(name: 'header_url') String? headerUrl,@JsonKey(name: 'home_city_id') String? homeCityId,@JsonKey(name: 'is_verified') bool isVerified,@JsonKey(name: 'is_demo') bool isDemo,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'onboarding_completed') bool onboardingCompleted,@JsonKey(name: 'favorite_cuisines') List<String> favoriteCuisines,@JsonKey(name: 'taste_tags') List<String> tasteTags,@JsonKey(name: 'banner_style') String bannerStyle,@JsonKey(name: 'header_focus_y') double headerFocusY,@JsonKey(name: 'taste_personality') Map<String, dynamic> tastePersonality,@JsonKey(name: 'created_at') DateTime createdAt
 });
 
 
@@ -65,7 +66,7 @@ class _$ProfileCopyWithImpl<$Res>
 
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? displayName = null,Object? bio = freezed,Object? avatarUrl = freezed,Object? headerUrl = freezed,Object? homeCityId = freezed,Object? isVerified = null,Object? isDemo = null,Object? isAdmin = null,Object? onboardingCompleted = null,Object? favoriteCuisines = null,Object? tasteTags = null,Object? bannerStyle = null,Object? tastePersonality = null,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? displayName = null,Object? bio = freezed,Object? avatarUrl = freezed,Object? headerUrl = freezed,Object? homeCityId = freezed,Object? isVerified = null,Object? isDemo = null,Object? isAdmin = null,Object? onboardingCompleted = null,Object? favoriteCuisines = null,Object? tasteTags = null,Object? bannerStyle = null,Object? headerFocusY = null,Object? tastePersonality = null,Object? createdAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -81,7 +82,8 @@ as bool,onboardingCompleted: null == onboardingCompleted ? _self.onboardingCompl
 as bool,favoriteCuisines: null == favoriteCuisines ? _self.favoriteCuisines : favoriteCuisines // ignore: cast_nullable_to_non_nullable
 as List<String>,tasteTags: null == tasteTags ? _self.tasteTags : tasteTags // ignore: cast_nullable_to_non_nullable
 as List<String>,bannerStyle: null == bannerStyle ? _self.bannerStyle : bannerStyle // ignore: cast_nullable_to_non_nullable
-as String,tastePersonality: null == tastePersonality ? _self.tastePersonality : tastePersonality // ignore: cast_nullable_to_non_nullable
+as String,headerFocusY: null == headerFocusY ? _self.headerFocusY : headerFocusY // ignore: cast_nullable_to_non_nullable
+as double,tastePersonality: null == tastePersonality ? _self.tastePersonality : tastePersonality // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -168,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'header_focus_y')  double headerFocusY, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Profile() when $default != null:
-return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.tastePersonality,_that.createdAt);case _:
+return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.headerFocusY,_that.tastePersonality,_that.createdAt);case _:
   return orElse();
 
 }
@@ -189,10 +191,10 @@ return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatar
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'header_focus_y')  double headerFocusY, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _Profile():
-return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.tastePersonality,_that.createdAt);case _:
+return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.headerFocusY,_that.tastePersonality,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +211,10 @@ return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatar
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username, @JsonKey(name: 'display_name')  String displayName,  String? bio, @JsonKey(name: 'avatar_url')  String? avatarUrl, @JsonKey(name: 'header_url')  String? headerUrl, @JsonKey(name: 'home_city_id')  String? homeCityId, @JsonKey(name: 'is_verified')  bool isVerified, @JsonKey(name: 'is_demo')  bool isDemo, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'onboarding_completed')  bool onboardingCompleted, @JsonKey(name: 'favorite_cuisines')  List<String> favoriteCuisines, @JsonKey(name: 'taste_tags')  List<String> tasteTags, @JsonKey(name: 'banner_style')  String bannerStyle, @JsonKey(name: 'header_focus_y')  double headerFocusY, @JsonKey(name: 'taste_personality')  Map<String, dynamic> tastePersonality, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Profile() when $default != null:
-return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.tastePersonality,_that.createdAt);case _:
+return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatarUrl,_that.headerUrl,_that.homeCityId,_that.isVerified,_that.isDemo,_that.isAdmin,_that.onboardingCompleted,_that.favoriteCuisines,_that.tasteTags,_that.bannerStyle,_that.headerFocusY,_that.tastePersonality,_that.createdAt);case _:
   return null;
 
 }
@@ -224,7 +226,7 @@ return $default(_that.id,_that.username,_that.displayName,_that.bio,_that.avatar
 @JsonSerializable()
 
 class _Profile implements Profile {
-  const _Profile({required this.id, required this.username, @JsonKey(name: 'display_name') required this.displayName, this.bio, @JsonKey(name: 'avatar_url') this.avatarUrl, @JsonKey(name: 'header_url') this.headerUrl, @JsonKey(name: 'home_city_id') this.homeCityId, @JsonKey(name: 'is_verified') this.isVerified = false, @JsonKey(name: 'is_demo') this.isDemo = false, @JsonKey(name: 'is_admin') this.isAdmin = false, @JsonKey(name: 'onboarding_completed') this.onboardingCompleted = false, @JsonKey(name: 'favorite_cuisines') final  List<String> favoriteCuisines = const <String>[], @JsonKey(name: 'taste_tags') final  List<String> tasteTags = const <String>[], @JsonKey(name: 'banner_style') this.bannerStyle = 'classic:voyage', @JsonKey(name: 'taste_personality') final  Map<String, dynamic> tastePersonality = const <String, dynamic>{}, @JsonKey(name: 'created_at') required this.createdAt}): _favoriteCuisines = favoriteCuisines,_tasteTags = tasteTags,_tastePersonality = tastePersonality;
+  const _Profile({required this.id, required this.username, @JsonKey(name: 'display_name') required this.displayName, this.bio, @JsonKey(name: 'avatar_url') this.avatarUrl, @JsonKey(name: 'header_url') this.headerUrl, @JsonKey(name: 'home_city_id') this.homeCityId, @JsonKey(name: 'is_verified') this.isVerified = false, @JsonKey(name: 'is_demo') this.isDemo = false, @JsonKey(name: 'is_admin') this.isAdmin = false, @JsonKey(name: 'onboarding_completed') this.onboardingCompleted = false, @JsonKey(name: 'favorite_cuisines') final  List<String> favoriteCuisines = const <String>[], @JsonKey(name: 'taste_tags') final  List<String> tasteTags = const <String>[], @JsonKey(name: 'banner_style') this.bannerStyle = 'classic:voyage', @JsonKey(name: 'header_focus_y') this.headerFocusY = 0.5, @JsonKey(name: 'taste_personality') final  Map<String, dynamic> tastePersonality = const <String, dynamic>{}, @JsonKey(name: 'created_at') required this.createdAt}): _favoriteCuisines = favoriteCuisines,_tasteTags = tasteTags,_tastePersonality = tastePersonality;
   factory _Profile.fromJson(Map<String, dynamic> json) => _$ProfileFromJson(json);
 
 @override final  String id;
@@ -253,6 +255,8 @@ class _Profile implements Profile {
 }
 
 @override@JsonKey(name: 'banner_style') final  String bannerStyle;
+// Vertical crop of the custom banner photo: 0 top, 0.5 center, 1 bottom.
+@override@JsonKey(name: 'header_focus_y') final  double headerFocusY;
  final  Map<String, dynamic> _tastePersonality;
 @override@JsonKey(name: 'taste_personality') Map<String, dynamic> get tastePersonality {
   if (_tastePersonality is EqualUnmodifiableMapView) return _tastePersonality;
@@ -275,16 +279,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.headerUrl, headerUrl) || other.headerUrl == headerUrl)&&(identical(other.homeCityId, homeCityId) || other.homeCityId == homeCityId)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&const DeepCollectionEquality().equals(other._favoriteCuisines, _favoriteCuisines)&&const DeepCollectionEquality().equals(other._tasteTags, _tasteTags)&&(identical(other.bannerStyle, bannerStyle) || other.bannerStyle == bannerStyle)&&const DeepCollectionEquality().equals(other._tastePersonality, _tastePersonality)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Profile&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.headerUrl, headerUrl) || other.headerUrl == headerUrl)&&(identical(other.homeCityId, homeCityId) || other.homeCityId == homeCityId)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&const DeepCollectionEquality().equals(other._favoriteCuisines, _favoriteCuisines)&&const DeepCollectionEquality().equals(other._tasteTags, _tasteTags)&&(identical(other.bannerStyle, bannerStyle) || other.bannerStyle == bannerStyle)&&(identical(other.headerFocusY, headerFocusY) || other.headerFocusY == headerFocusY)&&const DeepCollectionEquality().equals(other._tastePersonality, _tastePersonality)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,displayName,bio,avatarUrl,headerUrl,homeCityId,isVerified,isDemo,isAdmin,onboardingCompleted,const DeepCollectionEquality().hash(_favoriteCuisines),const DeepCollectionEquality().hash(_tasteTags),bannerStyle,const DeepCollectionEquality().hash(_tastePersonality),createdAt);
+int get hashCode => Object.hash(runtimeType,id,username,displayName,bio,avatarUrl,headerUrl,homeCityId,isVerified,isDemo,isAdmin,onboardingCompleted,const DeepCollectionEquality().hash(_favoriteCuisines),const DeepCollectionEquality().hash(_tasteTags),bannerStyle,headerFocusY,const DeepCollectionEquality().hash(_tastePersonality),createdAt);
 
 @override
 String toString() {
-  return 'Profile(id: $id, username: $username, displayName: $displayName, bio: $bio, avatarUrl: $avatarUrl, headerUrl: $headerUrl, homeCityId: $homeCityId, isVerified: $isVerified, isDemo: $isDemo, isAdmin: $isAdmin, onboardingCompleted: $onboardingCompleted, favoriteCuisines: $favoriteCuisines, tasteTags: $tasteTags, bannerStyle: $bannerStyle, tastePersonality: $tastePersonality, createdAt: $createdAt)';
+  return 'Profile(id: $id, username: $username, displayName: $displayName, bio: $bio, avatarUrl: $avatarUrl, headerUrl: $headerUrl, homeCityId: $homeCityId, isVerified: $isVerified, isDemo: $isDemo, isAdmin: $isAdmin, onboardingCompleted: $onboardingCompleted, favoriteCuisines: $favoriteCuisines, tasteTags: $tasteTags, bannerStyle: $bannerStyle, headerFocusY: $headerFocusY, tastePersonality: $tastePersonality, createdAt: $createdAt)';
 }
 
 
@@ -295,7 +299,7 @@ abstract mixin class _$ProfileCopyWith<$Res> implements $ProfileCopyWith<$Res> {
   factory _$ProfileCopyWith(_Profile value, $Res Function(_Profile) _then) = __$ProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String username,@JsonKey(name: 'display_name') String displayName, String? bio,@JsonKey(name: 'avatar_url') String? avatarUrl,@JsonKey(name: 'header_url') String? headerUrl,@JsonKey(name: 'home_city_id') String? homeCityId,@JsonKey(name: 'is_verified') bool isVerified,@JsonKey(name: 'is_demo') bool isDemo,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'onboarding_completed') bool onboardingCompleted,@JsonKey(name: 'favorite_cuisines') List<String> favoriteCuisines,@JsonKey(name: 'taste_tags') List<String> tasteTags,@JsonKey(name: 'banner_style') String bannerStyle,@JsonKey(name: 'taste_personality') Map<String, dynamic> tastePersonality,@JsonKey(name: 'created_at') DateTime createdAt
+ String id, String username,@JsonKey(name: 'display_name') String displayName, String? bio,@JsonKey(name: 'avatar_url') String? avatarUrl,@JsonKey(name: 'header_url') String? headerUrl,@JsonKey(name: 'home_city_id') String? homeCityId,@JsonKey(name: 'is_verified') bool isVerified,@JsonKey(name: 'is_demo') bool isDemo,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'onboarding_completed') bool onboardingCompleted,@JsonKey(name: 'favorite_cuisines') List<String> favoriteCuisines,@JsonKey(name: 'taste_tags') List<String> tasteTags,@JsonKey(name: 'banner_style') String bannerStyle,@JsonKey(name: 'header_focus_y') double headerFocusY,@JsonKey(name: 'taste_personality') Map<String, dynamic> tastePersonality,@JsonKey(name: 'created_at') DateTime createdAt
 });
 
 
@@ -312,7 +316,7 @@ class __$ProfileCopyWithImpl<$Res>
 
 /// Create a copy of Profile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? displayName = null,Object? bio = freezed,Object? avatarUrl = freezed,Object? headerUrl = freezed,Object? homeCityId = freezed,Object? isVerified = null,Object? isDemo = null,Object? isAdmin = null,Object? onboardingCompleted = null,Object? favoriteCuisines = null,Object? tasteTags = null,Object? bannerStyle = null,Object? tastePersonality = null,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? displayName = null,Object? bio = freezed,Object? avatarUrl = freezed,Object? headerUrl = freezed,Object? homeCityId = freezed,Object? isVerified = null,Object? isDemo = null,Object? isAdmin = null,Object? onboardingCompleted = null,Object? favoriteCuisines = null,Object? tasteTags = null,Object? bannerStyle = null,Object? headerFocusY = null,Object? tastePersonality = null,Object? createdAt = null,}) {
   return _then(_Profile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -328,7 +332,8 @@ as bool,onboardingCompleted: null == onboardingCompleted ? _self.onboardingCompl
 as bool,favoriteCuisines: null == favoriteCuisines ? _self._favoriteCuisines : favoriteCuisines // ignore: cast_nullable_to_non_nullable
 as List<String>,tasteTags: null == tasteTags ? _self._tasteTags : tasteTags // ignore: cast_nullable_to_non_nullable
 as List<String>,bannerStyle: null == bannerStyle ? _self.bannerStyle : bannerStyle // ignore: cast_nullable_to_non_nullable
-as String,tastePersonality: null == tastePersonality ? _self._tastePersonality : tastePersonality // ignore: cast_nullable_to_non_nullable
+as String,headerFocusY: null == headerFocusY ? _self.headerFocusY : headerFocusY // ignore: cast_nullable_to_non_nullable
+as double,tastePersonality: null == tastePersonality ? _self._tastePersonality : tastePersonality // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));

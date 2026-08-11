@@ -81,6 +81,9 @@ class ProfileHeader extends ConsumerWidget {
                     ? CachedNetworkImage(
                         imageUrl: profile.headerUrl!,
                         fit: BoxFit.cover,
+                        // The owner picks which slice of the photo shows;
+                        // 0 -> top of the image, 1 -> bottom.
+                        alignment: Alignment(0, profile.headerFocusY * 2 - 1),
                         errorWidget: (_, _, _) =>
                             _BrandBanner(bannerStyle: profile.bannerStyle),
                       )
@@ -115,23 +118,29 @@ class ProfileHeader extends ConsumerWidget {
                   ),
                 ),
               ),
-              // Actions sit on the banner's bottom edge, right side.
-              Positioned(
-                right: WbSpacing.md,
-                bottom: 4,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final (i, a) in actions.indexed) ...[
-                      if (i > 0) const SizedBox(width: WbSpacing.sm),
-                      a,
-                    ],
-                  ],
-                ),
-              ),
             ],
           ),
         ),
+        // Actions live BELOW the banner, right-aligned, so they never cover
+        // the cover photo someone chose (or paid for).
+        if (actions.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              WbSpacing.md,
+              WbSpacing.xs,
+              WbSpacing.md,
+              0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                for (final (i, a) in actions.indexed) ...[
+                  if (i > 0) const SizedBox(width: WbSpacing.sm),
+                  a,
+                ],
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             WbSpacing.md,

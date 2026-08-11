@@ -69,6 +69,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _citySearching = false;
   String _bannerDesign = 'classic';
   String _bannerColor = 'voyage';
+  double _headerFocusY = 0.5;
   File? _newAvatar;
   File? _newHeader;
   bool _busy = false;
@@ -157,6 +158,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'taste_tags': _tasteTags,
         'taste_personality': personality,
         'banner_style': composeBannerStyle(_bannerDesign, _bannerColor),
+        'header_focus_y': _headerFocusY,
       };
       if (_newAvatar != null) {
         patch['avatar_url'] = await uploader.uploadImage(
@@ -207,6 +209,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final parsedBanner = parseBannerStyle(profile.bannerStyle);
       _bannerDesign = parsedBanner.design;
       _bannerColor = parsedBanner.color;
+      _headerFocusY = profile.headerFocusY;
     }
     final cities = ref.watch(citiesProvider).value ?? [];
     final theme = Theme.of(context);
@@ -245,7 +248,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
           ),
-          const SizedBox(height: WbSpacing.sm),
+          Center(
+            child: TextButton(
+              onPressed: () async {
+                final f = await _pick();
+                if (f != null) setState(() => _newAvatar = f);
+              },
+              child: const Text('Change PFP'),
+            ),
+          ),
+          const SizedBox(height: WbSpacing.xs),
           Center(
             // Custom banner photos are part of premium_profile_layouts; the
             // guard trigger enforces the same rule server-side. Tapping
@@ -268,6 +280,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
           ),
+          // Live crop preview: what this shows is exactly what visitors see.
+          // The slider slides the photo vertically inside the banner window.
+          if (_newHeader != null || profile.headerUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(WbRadius.card),
+              child: Image(
+                image: _newHeader != null
+                    ? FileImage(_newHeader!)
+                    : CachedNetworkImageProvider(profile.headerUrl!)
+                          as ImageProvider,
+                height: 112,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                alignment: Alignment(0, _headerFocusY * 2 - 1),
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.vertical_align_top, size: 16),
+                Expanded(
+                  child: Slider(
+                    value: _headerFocusY,
+                    onChanged: (v) => setState(() => _headerFocusY = v),
+                    label: 'Banner position',
+                  ),
+                ),
+                const Icon(Icons.vertical_align_bottom, size: 16),
+              ],
+            ),
+          ],
           const SizedBox(height: WbSpacing.md),
           TextField(
             controller: _displayName,

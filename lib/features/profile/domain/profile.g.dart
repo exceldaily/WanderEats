@@ -29,6 +29,7 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
           .toList() ??
       const <String>[],
   bannerStyle: json['banner_style'] as String? ?? 'classic:voyage',
+  headerFocusY: (json['header_focus_y'] as num?)?.toDouble() ?? 0.5,
   tastePersonality:
       json['taste_personality'] as Map<String, dynamic>? ??
       const <String, dynamic>{},
@@ -50,6 +51,7 @@ Map<String, dynamic> _$ProfileToJson(_Profile instance) => <String, dynamic>{
   'favorite_cuisines': instance.favoriteCuisines,
   'taste_tags': instance.tasteTags,
   'banner_style': instance.bannerStyle,
+  'header_focus_y': instance.headerFocusY,
   'taste_personality': instance.tastePersonality,
   'created_at': instance.createdAt.toIso8601String(),
 };
