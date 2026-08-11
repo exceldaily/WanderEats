@@ -40,4 +40,5 @@ abstract final class Routes {
   static const trip = 'trip';
   static const follows = 'follows';
   static const admin = 'admin';
+  static const walkthrough = 'walkthrough';
 }

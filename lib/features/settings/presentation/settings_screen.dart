@@ -167,6 +167,12 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 _Header(l10n.settingsAbout),
                 ListTile(
+                  leading: const Icon(Icons.tour_outlined),
+                  title: const Text('App tour'),
+                  subtitle: const Text('Replay the quick intro to WanderBites'),
+                  onTap: () => context.goNamed(Routes.walkthrough),
+                ),
+                ListTile(
                   leading: const Icon(Icons.policy_outlined),
                   title: Text(l10n.settingsPrivacyPolicy),
                   trailing: const Icon(Icons.open_in_new, size: 18),

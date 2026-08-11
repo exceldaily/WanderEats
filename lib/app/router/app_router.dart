@@ -36,6 +36,7 @@ import '../../features/tasters/presentation/follow_list_screen.dart';
 import '../../features/tasters/presentation/taster_profile_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
+import '../../features/walkthrough/presentation/walkthrough_screen.dart';
 import 'routes.dart';
 import 'shell_scaffold.dart';
 
@@ -244,6 +245,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.admin,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const AdminScreen(),
+      ),
+      GoRoute(
+        path: '/tour',
+        name: Routes.walkthrough,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const WalkthroughScreen(),
       ),
       GoRoute(
         path: '/trips',

@@ -154,7 +154,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             dateOfBirth: _birthDate,
           );
       await ref.read(analyticsProvider).onboardingCompleted();
-      if (mounted) context.goNamed(Routes.map);
+      // Brand-new accounts get the one-time app tour before the map.
+      if (mounted) context.goNamed(Routes.walkthrough);
     } on AppException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
