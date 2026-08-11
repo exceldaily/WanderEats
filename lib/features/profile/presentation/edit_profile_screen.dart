@@ -247,16 +247,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: WbSpacing.sm),
           Center(
+            // Custom banner photos are part of premium_profile_layouts; the
+            // guard trigger enforces the same rule server-side. Tapping
+            // without premium routes to the paywall, matching the swatches.
             child: TextButton.icon(
-              onPressed: () async {
+              onPressed: () => _pickPremium(() async {
                 final f = await _pick();
-                if (f != null) setState(() => _newHeader = f);
-              },
-              icon: const Icon(Icons.wallpaper_outlined, size: 18),
+                if (f != null && mounted) setState(() => _newHeader = f);
+              }),
+              icon: Icon(
+                _hasPremiumLayouts
+                    ? Icons.wallpaper_outlined
+                    : Icons.lock_outline,
+                size: 18,
+              ),
               label: Text(
                 _newHeader == null
-                    ? 'Change header image'
-                    : 'Header image selected',
+                    ? 'Custom banner photo (Premium)'
+                    : 'Banner photo selected',
               ),
             ),
           ),

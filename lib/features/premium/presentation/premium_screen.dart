@@ -174,7 +174,7 @@ class _Pitch extends ConsumerWidget {
     (Icons.chat_bubble_outline, 'Message other Tasters (18+)'),
     (Icons.groups_outlined, 'Create Taste Groups'),
     (Icons.map_outlined, 'Plan multi-stop food trips'),
-    (Icons.auto_awesome_outlined, 'Customize your profile'),
+    (Icons.auto_awesome_outlined, 'Custom banner photos and profile styles'),
   ];
 
   @override
