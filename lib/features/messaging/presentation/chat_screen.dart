@@ -59,7 +59,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _messages.isEmpty || (page.isNotEmpty && page.first.id != _messages.first.id);
       setState(() {
         _messages = page;
-        _loading = false;
         _error = null;
       });
       if (markRead || hadNew) {
@@ -68,9 +67,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() {
-        _loading = false;
         _error = _messages.isEmpty ? e.message : null;
       });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = _messages.isEmpty ? 'Could not load messages.' : null;
+      });
+    } finally {
+      // Cleared here so no failure mode can leave the spinner up forever.
+      if (mounted && _loading) setState(() => _loading = false);
     }
   }
 
@@ -80,8 +86,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _sending = true);
     try {
       await _repo.sendMessage(widget.conversationId, body);
+      if (!mounted) return;
       _input.clear();
       await _refresh();
+      if (!mounted) return;
       if (_scroll.hasClients) {
         // reverse:true list - offset 0 is the newest message.
         _scroll.jumpTo(0);

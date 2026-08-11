@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FAF6F0</color>
+    <!-- Ember coral accent used to tint the FCM status-bar icon -->
+    <color name="notification_accent">#E4593B</color>
 </resources>

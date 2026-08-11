@@ -54,13 +54,23 @@ class GroupDetailScreen extends ConsumerWidget {
                   isScrollControlled: true,
                   builder: (context) => _AddPickSheet(groupId: groupId),
                 );
+                if (!context.mounted) return;
                 refreshAll();
               },
               icon: const Icon(Icons.add_location_alt_outlined),
               label: const Text('Add pick'),
             )
           : null,
-      body: RefreshIndicator(
+      // The groups list loaded fine but this group is not in it: deleted, or
+      // never visible to this account. Distinct from "still loading".
+      body: groups.hasValue && group == null
+          ? const WbEmptyState(
+              icon: Icons.group_off_outlined,
+              title: 'This group is unavailable.',
+              message: 'It may have been deleted or is no longer shared '
+                  'with you.',
+            )
+          : RefreshIndicator(
         onRefresh: () async => refreshAll(),
         child: ListView(
           padding: const EdgeInsets.only(bottom: 96),
@@ -106,7 +116,15 @@ class GroupDetailScreen extends ConsumerWidget {
                   padding: EdgeInsets.all(WbSpacing.md),
                   child: WbSkeleton(height: 60),
                 ),
-                error: (e, _) => const SizedBox.shrink(),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(WbSpacing.md),
+                  child: Text(
+                    'Members could not load.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
                 data: (list) => ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: WbSpacing.md),
@@ -210,9 +228,29 @@ class GroupDetailScreen extends ConsumerWidget {
                                     tooltip: 'Remove pick',
                                     icon: const Icon(Icons.close, size: 18),
                                     onPressed: () async {
-                                      await ref
-                                          .read(tasteGroupRepositoryProvider)
-                                          .removePick(pick.id);
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      try {
+                                        await ref
+                                            .read(tasteGroupRepositoryProvider)
+                                            .removePick(pick.id);
+                                      } on GroupException catch (e) {
+                                        messenger.showSnackBar(
+                                          SnackBar(content: Text(e.message)),
+                                        );
+                                        return;
+                                      } catch (_) {
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Could not remove the pick.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (!context.mounted) return;
                                       refreshAll();
                                     },
                                   )
@@ -238,6 +276,7 @@ class GroupDetailScreen extends ConsumerWidget {
   ) async {
     try {
       await ref.read(tasteGroupRepositoryProvider).join(groupId);
+      if (!context.mounted) return;
       refreshAll();
     } on GroupException catch (e) {
       if (!context.mounted) return;
@@ -279,9 +318,28 @@ class GroupDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    await ref.read(tasteGroupRepositoryProvider).leave(groupId);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref.read(tasteGroupRepositoryProvider).leave(groupId);
+    } on GroupException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            group.isOwner
+                ? 'Could not delete the group.'
+                : 'Could not leave the group.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (!context.mounted) return;
     ref.invalidate(tasteGroupsProvider);
-    if (context.mounted) context.pop();
+    navigator.pop();
   }
 }
 
@@ -314,10 +372,15 @@ class _AddPickSheetState extends ConsumerState<_AddPickSheet> {
   void _search(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () async {
-      final rows = await ref
-          .read(tasteGroupRepositoryProvider)
-          .searchRestaurants(value);
-      if (mounted) setState(() => _results = rows);
+      try {
+        final rows = await ref
+            .read(tasteGroupRepositoryProvider)
+            .searchRestaurants(value);
+        if (mounted) setState(() => _results = rows);
+      } catch (_) {
+        // A failed lookup just leaves the picker empty; typing again retries.
+        if (mounted) setState(() => _results = const []);
+      }
     });
   }
 

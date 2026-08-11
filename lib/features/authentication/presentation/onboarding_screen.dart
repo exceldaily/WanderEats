@@ -96,9 +96,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final username = normalized.trim();
     if (!RegExp(r'^[a-z0-9_]{3,24}$').hasMatch(username)) return;
     _usernameDebounce = Timer(const Duration(milliseconds: 400), () async {
-      final available = await ref
-          .read(profileRepositoryProvider)
-          .isUsernameAvailable(username);
+      bool available;
+      try {
+        available = await ref
+            .read(profileRepositoryProvider)
+            .isUsernameAvailable(username);
+      } catch (_) {
+        // Treat a failed check as available: the server's unique constraint
+        // is the real gate, and a flaky network must not block sign-up.
+        available = true;
+      }
       if (mounted && _username.text.trim() == username) {
         setState(() => _usernameAvailable = available);
       }
@@ -121,7 +128,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       source: ImageSource.gallery,
       imageQuality: 90,
     );
-    if (picked != null) setState(() => _avatarFile = File(picked.path));
+    if (!mounted || picked == null) return;
+    setState(() => _avatarFile = File(picked.path));
   }
 
   Future<void> _finish() async {
@@ -157,9 +165,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Brand-new accounts get the one-time app tour before the map.
       if (mounted) context.goNamed(Routes.walkthrough);
     } on AppException catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.message);
     } catch (e) {
       // Catch-all so the button can never get stuck on a silent spinner.
+      if (!mounted) return;
       setState(() => _error = 'Could not create your profile: $e');
     } finally {
       if (mounted) setState(() => _busy = false);

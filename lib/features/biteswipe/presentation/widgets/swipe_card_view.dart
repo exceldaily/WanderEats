@@ -3,15 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/wb_tokens.dart';
 import '../../../../core/widgets/wb_photo.dart';
-import '../../../restaurants/data/restaurant_repository.dart';
 import '../../../restaurants/domain/restaurant.dart';
+import '../../../restaurants/presentation/restaurant_summary_provider.dart';
 import '../../../restaurants/presentation/widgets/taster_avatars.dart';
 import '../../domain/swipe_card.dart';
-
-final _summaryProvider = FutureProvider.autoDispose
-    .family<RestaurantSummary, String>(
-      (ref, id) => ref.watch(restaurantRepositoryProvider).fetchSummary(id),
-    );
 
 /// One restaurant card: photo-led, the three questions in order —
 /// what is it, why is it worth it, who says so.
@@ -30,7 +25,7 @@ class SwipeCardView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final summary = ref.watch(_summaryProvider(card.id));
+    final summary = ref.watch(restaurantSummaryProvider(card.id));
 
     return Semantics(
       label:

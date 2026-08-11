@@ -24,6 +24,21 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Registers the wanderbites:// scheme so Supabase auth callbacks
+	     (email confirmation, magic links, password reset) can reopen the
+	     app. Android declares the matching intent filter in its manifest;
+	     without this block the redirect dead-ends on iOS. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.wanderbites.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wanderbites</string>
+			</array>
+		</dict>
+	</array>
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<!-- Declares that this app uses no encryption beyond the HTTPS/TLS the OS
@@ -66,6 +81,12 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Required by firebase_messaging for background/data pushes; alert
+	     pushes display without it but background delivery does not. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

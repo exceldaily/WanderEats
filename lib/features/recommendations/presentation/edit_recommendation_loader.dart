@@ -28,8 +28,9 @@ class EditRecommendationLoader extends ConsumerWidget {
     final rec = ref.watch(recommendationByIdProvider(recommendationId));
 
     return rec.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      loading: () => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
       ),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit recommendation')),

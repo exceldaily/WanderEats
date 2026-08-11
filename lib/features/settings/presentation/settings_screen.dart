@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/links/safe_link.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
@@ -29,71 +29,112 @@ final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  Future<void> _update(WidgetRef ref, String key, Object? value) async {
+  Future<void> _update(
+    BuildContext context,
+    WidgetRef ref,
+    String key,
+    Object? value,
+  ) async {
     final session = ref.read(sessionProvider);
     if (session == null) return;
-    await ref.read(profileRepositoryProvider).updateSettings(session.user.id, {
-      key: value,
-    });
-    ref.invalidate(settingsProvider);
+    try {
+      await ref.read(profileRepositoryProvider).updateSettings(
+        session.user.id,
+        {key: value},
+      );
+    } on AppException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save that setting.')),
+        );
+      }
+    } finally {
+      // Refetch either way: on success it confirms, on failure the toggle
+      // visually reverts to what the server holds.
+      if (context.mounted) ref.invalidate(settingsProvider);
+    }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider).value;
+    final settingsAsync = ref.watch(settingsProvider);
+    final settings = settingsAsync.value;
     final l10n = AppLocalizations.of(context);
     bool flag(String key, [bool fallback = true]) =>
         (settings?[key] as bool?) ?? fallback;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: settings == null
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
+      body: settingsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Settings could not load.'),
+              const SizedBox(height: WbSpacing.sm),
+              FilledButton(
+                onPressed: () => ref.invalidate(settingsProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        // A signed-out state resolves to null; treat it like loading rather
+        // than flashing an error.
+        data: (data) => data == null
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
               padding: const EdgeInsets.symmetric(vertical: WbSpacing.sm),
               children: [
                 _Header(l10n.settingsNotifications),
                 SwitchListTile(
                   title: Text(l10n.settingsPushNotifications),
                   value: flag('push_enabled'),
-                  onChanged: (v) => _update(ref, 'push_enabled', v),
+                  onChanged: (v) => _update(context, ref, 'push_enabled', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsNewFollowers),
                   value: flag('notif_follows'),
-                  onChanged: (v) => _update(ref, 'notif_follows', v),
+                  onChanged: (v) => _update(context, ref, 'notif_follows', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsComments),
                   value: flag('notif_comments'),
-                  onChanged: (v) => _update(ref, 'notif_comments', v),
+                  onChanged: (v) => _update(context, ref, 'notif_comments', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsListActivity),
                   value: flag('notif_list_activity'),
-                  onChanged: (v) => _update(ref, 'notif_list_activity', v),
+                  onChanged: (v) => _update(context, ref, 'notif_list_activity', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsTasterActivity),
                   value: flag('notif_taster_activity'),
-                  onChanged: (v) => _update(ref, 'notif_taster_activity', v),
+                  onChanged: (v) => _update(context, ref, 'notif_taster_activity', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsBadgeUnlocks),
                   value: flag('notif_badges'),
-                  onChanged: (v) => _update(ref, 'notif_badges', v),
+                  onChanged: (v) => _update(context, ref, 'notif_badges', v),
                 ),
                 _Header(l10n.settingsPrivacy),
                 SwitchListTile(
                   title: Text(l10n.settingsPublicProfile),
                   subtitle: Text(l10n.settingsPublicProfileSubtitle),
                   value: flag('profile_public'),
-                  onChanged: (v) => _update(ref, 'profile_public', v),
+                  onChanged: (v) => _update(context, ref, 'profile_public', v),
                 ),
                 SwitchListTile(
                   title: Text(l10n.settingsShowVisitedPublicly),
                   value: flag('show_visited_publicly'),
-                  onChanged: (v) => _update(ref, 'show_visited_publicly', v),
+                  onChanged: (v) => _update(context, ref, 'show_visited_publicly', v),
                 ),
                 // Sits under Privacy rather than Account: managing who cannot
                 // reach you is a privacy control, and it needs to be somewhere
@@ -170,30 +211,33 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.tour_outlined),
                   title: const Text('App tour'),
                   subtitle: const Text('Replay the quick intro to WanderBites'),
-                  onTap: () => context.goNamed(Routes.walkthrough),
+                  // push, not go: the tour should return here when it closes.
+                  onTap: () => context.pushNamed(Routes.walkthrough),
                 ),
                 ListTile(
                   leading: const Icon(Icons.policy_outlined),
                   title: Text(l10n.settingsPrivacyPolicy),
                   trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => _openSite('/privacy'),
+                  onTap: () => _openSite(context, '/privacy'),
                 ),
                 ListTile(
                   leading: const Icon(Icons.help_outline),
                   title: Text(l10n.settingsDeletionHowItWorks),
                   trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => _openSite('/delete-account'),
+                  onTap: () => _openSite(context, '/delete-account'),
                 ),
               ],
             ),
+      ),
     );
   }
 
-  Future<void> _openSite(String path) async {
-    await launchUrl(
-      Uri.parse('$_siteBase$path'),
-      mode: LaunchMode.externalApplication,
-    );
+  Future<void> _openSite(BuildContext context, String path) async {
+    final rejection = await SafeLink.open('$_siteBase$path');
+    if (rejection == null || !context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(rejection.message)));
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

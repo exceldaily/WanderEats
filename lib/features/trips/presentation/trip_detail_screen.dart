@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../data/trip_repository.dart';
 import '../domain/trip_models.dart';
@@ -46,6 +47,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             builder: (context) =>
                 _AddStopSheet(tripId: widget.tripId, nextPosition: count + 1),
           );
+          if (!context.mounted) return;
           ref.invalidate(tripStopsProvider(widget.tripId));
         },
         icon: const Icon(Icons.add),
@@ -101,7 +103,25 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                       tooltip: 'Remove stop',
                       icon: const Icon(Icons.close, size: 18),
                       onPressed: () async {
-                        await ref.read(tripRepositoryProvider).removeStop(s.id);
+                        final messenger = ScaffoldMessenger.of(context);
+                        try {
+                          await ref
+                              .read(tripRepositoryProvider)
+                              .removeStop(s.id);
+                        } on AppException catch (e) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(e.message)),
+                          );
+                          return;
+                        } catch (_) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Could not update the trip.'),
+                            ),
+                          );
+                          return;
+                        }
+                        if (!mounted) return;
                         ref.invalidate(tripStopsProvider(widget.tripId));
                       },
                     ),
@@ -120,7 +140,21 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final ids = [for (final s in list) s.id];
     final moved = ids.removeAt(oldIndex);
     ids.insert(newIndex, moved);
-    await ref.read(tripRepositoryProvider).reorder(widget.tripId, ids);
+    try {
+      await ref.read(tripRepositoryProvider).reorder(widget.tripId, ids);
+    } on AppException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update the trip.')),
+      );
+    }
+    // Refetch either way: on failure the list snaps back to the server order.
+    if (!mounted) return;
     ref.invalidate(tripStopsProvider(widget.tripId));
   }
 
@@ -143,9 +177,22 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await ref.read(tripRepositoryProvider).deleteTrip(widget.tripId);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(tripRepositoryProvider).deleteTrip(widget.tripId);
+    } on AppException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not delete the trip.')),
+      );
+      return;
+    }
+    // Only leave the screen once the delete actually happened.
+    if (!mounted) return;
     ref.invalidate(myTripsProvider);
-    if (mounted) context.pop();
+    context.pop();
   }
 }
 
@@ -178,10 +225,18 @@ class _AddStopSheetState extends ConsumerState<_AddStopSheet> {
   void _search(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () async {
-      final rows = await ref
-          .read(tripRepositoryProvider)
-          .searchRestaurants(value);
-      if (mounted) setState(() => _results = rows);
+      try {
+        final rows = await ref
+            .read(tripRepositoryProvider)
+            .searchRestaurants(value);
+        if (mounted) setState(() => _results = rows);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _results = const []);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Search failed. Try again.')),
+        );
+      }
     });
   }
 

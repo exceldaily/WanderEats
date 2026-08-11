@@ -105,15 +105,6 @@ class FirebaseAnalyticsServiceImpl implements AnalyticsService {
       _analytics.logEvent(name: 'deck_opened', parameters: {'from': from});
 
   @override
-  Future<void> deckCardShown({
-    required String restaurantId,
-    required String reason,
-  }) => _analytics.logEvent(
-    name: 'deck_card_shown',
-    parameters: {'restaurant_id': restaurantId, 'reason': reason},
-  );
-
-  @override
   Future<void> deckSaved({required String restaurantId}) => _analytics.logEvent(
     name: 'deck_saved',
     parameters: {'restaurant_id': restaurantId},

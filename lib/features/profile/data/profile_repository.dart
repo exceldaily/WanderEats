@@ -22,24 +22,15 @@ class ProfileRepository {
     }
   }
 
-  Future<Profile?> fetchByUsername(String username) async {
+  Future<bool> isUsernameAvailable(String username) async {
     try {
-      final row = await _db('profiles')
-          .select()
-          .eq('username', username)
-          .isFilter('deleted_at', null)
-          .maybeSingle();
-      return row == null ? null : Profile.fromJson(row);
+      final row = await _db(
+        'profiles',
+      ).select('id').eq('username', username).maybeSingle();
+      return row == null;
     } on PostgrestException catch (e) {
       throw ServerException(cause: e);
     }
-  }
-
-  Future<bool> isUsernameAvailable(String username) async {
-    final row = await _db(
-      'profiles',
-    ).select('id').eq('username', username).maybeSingle();
-    return row == null;
   }
 
   /// Creates the WanderBites profile during onboarding. RLS only allows

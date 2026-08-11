@@ -179,10 +179,23 @@ class _BlockTile extends ConsumerWidget {
         final repo = ref.read(safetyRepositoryProvider);
 
         if (blocked) {
-          Navigator.of(context).pop();
-          await repo.unblock(userId);
+          try {
+            await repo.unblock(userId);
+          } on AppException {
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Could not unblock. Try again.')),
+            );
+            return;
+          } catch (_) {
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Could not unblock. Try again.')),
+            );
+            return;
+          }
+          if (!context.mounted) return;
           ref.invalidate(isBlockedProvider(userId));
           ref.invalidate(blockedAccountsProvider);
+          Navigator.of(context).pop();
           messenger.showSnackBar(SnackBar(content: Text('Unblocked $who')));
           return;
         }
@@ -213,17 +226,24 @@ class _BlockTile extends ConsumerWidget {
         );
         if (confirmed != true || !context.mounted) return;
 
-        Navigator.of(context).pop();
         try {
           await repo.block(userId);
-          ref.invalidate(isBlockedProvider(userId));
-          ref.invalidate(blockedAccountsProvider);
-          messenger.showSnackBar(SnackBar(content: Text('Blocked $who')));
         } on AppException {
           messenger.showSnackBar(
             const SnackBar(content: Text('Could not block. Try again.')),
           );
+          return;
+        } catch (_) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Could not block. Try again.')),
+          );
+          return;
         }
+        if (!context.mounted) return;
+        ref.invalidate(isBlockedProvider(userId));
+        ref.invalidate(blockedAccountsProvider);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(SnackBar(content: Text('Blocked $who')));
       },
     );
   }

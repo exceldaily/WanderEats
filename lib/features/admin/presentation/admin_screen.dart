@@ -339,9 +339,25 @@ class _ReportsTab extends ConsumerWidget {
                       isThreeLine: true,
                       trailing: PopupMenuButton<String>(
                         onSelected: (status) async {
-                          await ref
-                              .read(adminRepositoryProvider)
-                              .resolveReport(r.id, status);
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await ref
+                                .read(adminRepositoryProvider)
+                                .resolveReport(r.id, status);
+                          } on AppException catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(e.message)),
+                            );
+                            return;
+                          } catch (_) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not update the report.'),
+                              ),
+                            );
+                            return;
+                          }
+                          if (!context.mounted) return;
                           ref.invalidate(adminReportsProvider);
                         },
                         itemBuilder: (context) => const [

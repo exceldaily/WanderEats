@@ -67,22 +67,45 @@ class ListRepository {
     }
   }
 
-  /// followers / likes / comments counts + whether I follow it.
+  /// followers / likes counts + whether I follow/like it. Server-side counts
+  /// and point lookups; the old version downloaded every follower and like
+  /// row just to call .length on them.
   Future<Map<String, dynamic>> listMeta(String listId, String? myId) async {
     final followers = await _schema
         .from('list_follows')
-        .select('user_id')
+        .count(CountOption.exact)
         .eq('list_id', listId);
     final likes = await _schema
         .from('likes')
-        .select('user_id')
+        .count(CountOption.exact)
         .eq('target_type', 'list')
         .eq('target_id', listId);
+    var iFollow = false;
+    var iLike = false;
+    if (myId != null) {
+      iFollow =
+          await _schema
+              .from('list_follows')
+              .select('user_id')
+              .eq('list_id', listId)
+              .eq('user_id', myId)
+              .maybeSingle() !=
+          null;
+      iLike =
+          await _schema
+              .from('likes')
+              .select('user_id')
+              .eq('target_type', 'list')
+              .eq('target_id', listId)
+              .eq('user_id', myId)
+              .maybeSingle() !=
+          null;
+    }
     return {
-      'followers': followers.length,
-      'likes': likes.length,
-      'i_follow': myId != null && followers.any((r) => r['user_id'] == myId),
-      'i_like': myId != null && likes.any((r) => r['user_id'] == myId),
+      'followers': followers,
+      'likes': likes,
+      'i_follow': iFollow,
+      'i_like': iLike,
     };
   }
 

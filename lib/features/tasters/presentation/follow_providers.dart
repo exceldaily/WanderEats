@@ -37,8 +37,11 @@ class FollowingIdsController extends AsyncNotifier<Set<String>> {
         await repo.unfollow(session.user.id, tasterId);
       }
     } catch (_) {
+      // Roll back and swallow: most callers fire this from a VoidCallback,
+      // where a rethrow becomes an uncaught zone error (a Crashlytics fatal)
+      // instead of feedback. The icon reverting is the failure signal;
+      // screens that want a snackbar wrap their own call in try/catch.
       state = AsyncData(current);
-      rethrow;
     }
   }
 }

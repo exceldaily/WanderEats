@@ -93,8 +93,19 @@ class TripsScreen extends ConsumerWidget {
   Future<void> _create(BuildContext context, WidgetRef ref) async {
     final denial = denialFor(ref, PremiumEntitlement.advancedTripPlanning);
     if (denial != null) {
-      if (denial.canBeSolvedByUpgrading && context.mounted) {
+      if (!context.mounted) return;
+      if (denial.canBeSolvedByUpgrading) {
         unawaited(context.pushNamed(Routes.premium));
+      } else {
+        // Say why the button did nothing rather than appearing dead.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(switch (denial) {
+              EntitlementDenial.notSignedIn => 'Sign in to plan food trips.',
+              _ => 'Trip planning is not available on this account.',
+            }),
+          ),
+        );
       }
       return;
     }

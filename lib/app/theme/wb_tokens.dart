@@ -9,7 +9,6 @@ abstract final class WbColors {
   // Primary: Voyage teal
   static const voyage = Color(0xFF0E4F4A);
   static const voyageLight = Color(0xFF3B7A73);
-  static const voyageDark = Color(0xFF07332F);
 
   // Accent: Ember coral (appetite, saves, CTAs)
   static const ember = Color(0xFFE4593B);
@@ -18,7 +17,6 @@ abstract final class WbColors {
   // Warm neutrals
   static const cream = Color(0xFFFAF6F0);
   static const sand = Color(0xFFF0E9DE);
-  static const stone = Color(0xFF8A8478);
   static const ink = Color(0xFF1E211F);
 
   // Dark theme surfaces (deep charcoal with a green undertone)
@@ -31,10 +29,7 @@ abstract final class WbColors {
   static const warning = Color(0xFFC98A16);
   static const danger = Color(0xFFB3402A);
 
-  // Map marker states (never rely on color alone; markers also vary by icon)
-  static const markerDefault = voyage;
-  static const markerSaved = ember;
-  static const markerVisited = Color(0xFF5C6BC0);
+  // Trending accent (map pins use BitmapDescriptor hues, not these tokens)
   static const markerTrending = Color(0xFFC98A16);
 }
 
@@ -44,7 +39,6 @@ abstract final class WbSpacing {
   static const double md = 16;
   static const double lg = 24;
   static const double xl = 32;
-  static const double xxl = 48;
 }
 
 abstract final class WbRadius {

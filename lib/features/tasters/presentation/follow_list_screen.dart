@@ -54,7 +54,9 @@ final _followListProvider = FutureProvider.autoDispose
                 : 'profile:profiles!followee_id(id, username, display_name, avatar_url, is_demo, deleted_at)',
           )
           .eq(q.followers ? 'followee_id' : 'follower_id', q.userId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          // Pagination is deferred; 200 comfortably covers current scale.
+          .limit(200);
       return [
         for (final row in rows)
           if ((row['profile'] as Map?)?['deleted_at'] == null)
@@ -108,6 +110,21 @@ class _FollowList extends ConsumerWidget {
   const _FollowList({required this.query});
 
   final _FollowQuery query;
+
+  Future<void> _toggleFollow(
+    BuildContext context,
+    WidgetRef ref,
+    String tasterId,
+  ) async {
+    try {
+      await ref.read(followingIdsProvider.notifier).toggle(tasterId);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update follow. Try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -185,15 +202,11 @@ class _FollowList extends ConsumerWidget {
                         ? null
                         : following
                         ? OutlinedButton(
-                            onPressed: () => ref
-                                .read(followingIdsProvider.notifier)
-                                .toggle(e.id),
+                            onPressed: () => _toggleFollow(context, ref, e.id),
                             child: const Text('Following'),
                           )
                         : FilledButton.tonal(
-                            onPressed: () => ref
-                                .read(followingIdsProvider.notifier)
-                                .toggle(e.id),
+                            onPressed: () => _toggleFollow(context, ref, e.id),
                             child: const Text('Follow'),
                           ),
                     onTap: () => context.pushNamed(

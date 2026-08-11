@@ -34,10 +34,6 @@ abstract class AnalyticsService {
 
   // BiteSwipe
   Future<void> deckOpened({required String from});
-  Future<void> deckCardShown({
-    required String restaurantId,
-    required String reason,
-  });
   Future<void> deckSaved({required String restaurantId});
   Future<void> deckSkipped({required String restaurantId});
   Future<void> deckUndo();
@@ -112,14 +108,6 @@ class DebugAnalyticsService implements AnalyticsService {
   @override
   Future<void> deckOpened({required String from}) =>
       _log('deck_opened', {'from': from});
-  @override
-  Future<void> deckCardShown({
-    required String restaurantId,
-    required String reason,
-  }) => _log('deck_card_shown', {
-    'restaurant_id': restaurantId,
-    'reason': reason,
-  });
   @override
   Future<void> deckSaved({required String restaurantId}) =>
       _log('deck_saved', {'restaurant_id': restaurantId});

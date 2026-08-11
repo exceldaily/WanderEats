@@ -7,15 +7,10 @@ import '../../../app/theme/wb_tokens.dart';
 import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_photo.dart';
 import '../../../core/widgets/wb_states.dart';
-import '../../restaurants/data/restaurant_repository.dart';
 import '../../restaurants/domain/restaurant.dart';
 import '../../restaurants/presentation/restaurant_actions.dart';
+import '../../restaurants/presentation/restaurant_summary_provider.dart';
 import '../../restaurants/presentation/widgets/taster_avatars.dart';
-
-final _summaryProvider = FutureProvider.autoDispose
-    .family<RestaurantSummary, String>((ref, id) {
-      return ref.watch(restaurantRepositoryProvider).fetchSummary(id);
-    });
 
 /// Draggable bottom card over the map: collapsed, medium, expanded.
 class RestaurantPreviewCard extends ConsumerWidget {
@@ -31,7 +26,7 @@ class RestaurantPreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final summary = ref.watch(_summaryProvider(marker.id));
+    final summary = ref.watch(restaurantSummaryProvider(marker.id));
     final saved = (ref.watch(savedIdsProvider).value ?? {}).contains(marker.id);
 
     // The sheet is a fixed fraction of the screen, but its content is not: a

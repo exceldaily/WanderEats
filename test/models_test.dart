@@ -120,12 +120,15 @@ void main() {
       expect(const MapFilters(minRecs: 1).isActive, isTrue);
     });
 
-    test('copyWith clears maxPrice when omitted (explicit reset semantics)',
+    test('copyWith preserves maxPrice when omitted, clears on explicit null',
         () {
       const f = MapFilters(maxPrice: 2, savedOnly: true);
       final g = f.copyWith(savedOnly: false);
-      expect(g.maxPrice, isNull);
+      // Toggling another filter must not wipe the price filter.
+      expect(g.maxPrice, 2);
       expect(g.savedOnly, isFalse);
+      expect(g.copyWith(maxPrice: null).maxPrice, isNull);
+      expect(g.copyWith(maxPrice: 3).maxPrice, 3);
     });
   });
 

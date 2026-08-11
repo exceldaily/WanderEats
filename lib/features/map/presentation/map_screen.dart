@@ -38,6 +38,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   );
 
   @override
+  void dispose() {
+    _map?.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -378,11 +384,7 @@ class _FilterBar extends ConsumerWidget {
                 label: Text('${'\$' * price} max'),
                 selected: filters.maxPrice == price,
                 onSelected: (v) => notifier.setFilters(
-                  MapFilters(
-                    maxPrice: v ? price : null,
-                    savedOnly: filters.savedOnly,
-                    minRecs: filters.minRecs,
-                  ),
+                  filters.copyWith(maxPrice: v ? price : null),
                 ),
               ),
             ),

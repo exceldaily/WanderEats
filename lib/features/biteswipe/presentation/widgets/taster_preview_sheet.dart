@@ -7,14 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/wb_tokens.dart';
 import '../../../../core/services/analytics/analytics_service.dart';
-import '../../../restaurants/data/restaurant_repository.dart';
 import '../../../restaurants/domain/restaurant.dart';
+import '../../../restaurants/presentation/restaurant_summary_provider.dart';
 import '../../../tasters/presentation/follow_providers.dart';
-
-final _summaryProvider = FutureProvider.autoDispose
-    .family<RestaurantSummary, String>(
-      (ref, id) => ref.watch(restaurantRepositoryProvider).fetchSummary(id),
-    );
 
 /// Compact draggable sheet over the deck: who vouches for this place, with a
 /// follow button that works in place. Deliberately not a full profile — the
@@ -52,7 +47,7 @@ class _TasterPreviewBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final summary = ref.watch(_summaryProvider(restaurantId));
+    final summary = ref.watch(restaurantSummaryProvider(restaurantId));
     final following = ref.watch(followingIdsProvider).value ?? {};
 
     return summary.when(

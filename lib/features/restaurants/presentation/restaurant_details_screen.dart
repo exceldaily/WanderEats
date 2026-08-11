@@ -19,16 +19,12 @@ import '../../recommendations/presentation/widgets/recommendation_card.dart';
 import '../data/restaurant_repository.dart';
 import '../domain/restaurant.dart';
 import 'restaurant_actions.dart';
+import 'restaurant_summary_provider.dart';
 import 'widgets/taster_avatars.dart';
 
 final _restaurantProvider = FutureProvider.autoDispose
     .family<Restaurant, String>(
       (ref, id) => ref.watch(restaurantRepositoryProvider).fetchRestaurant(id),
-    );
-
-final _summaryProvider = FutureProvider.autoDispose
-    .family<RestaurantSummary, String>(
-      (ref, id) => ref.watch(restaurantRepositoryProvider).fetchSummary(id),
     );
 
 final _cuisinesProvider = FutureProvider.autoDispose
@@ -104,6 +100,24 @@ class RestaurantDetailsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _toggle(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+      // AppException and anything else alike: the toggle already rolled the
+      // optimistic state back, so one fixed message covers both.
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not update. Check your connection.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -116,14 +130,20 @@ class RestaurantDetailsScreen extends ConsumerWidget {
     );
     final signedIn = ref.watch(isSignedInProvider);
 
-    return Scaffold(
-      body: restaurant.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => WbErrorState(
+    return restaurant.when(
+      loading: () => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: WbErrorState(
           message: e.toString(),
           onRetry: () => ref.invalidate(_restaurantProvider(restaurantId)),
         ),
-        data: (r) => CustomScrollView(
+      ),
+      data: (r) => Scaffold(
+        body: CustomScrollView(
           slivers: [
             SliverAppBar(
               expandedHeight: 220,
@@ -241,9 +261,12 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                         Expanded(
                           child: FilledButton.tonalIcon(
                             onPressed: signedIn
-                                ? () => ref
-                                      .read(savedIdsProvider.notifier)
-                                      .toggle(restaurantId)
+                                ? () => _toggle(
+                                    context,
+                                    () => ref
+                                        .read(savedIdsProvider.notifier)
+                                        .toggle(restaurantId),
+                                  )
                                 : null,
                             icon: Icon(
                               saved ? Icons.bookmark : Icons.bookmark_outline,
@@ -259,9 +282,12 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: signedIn
-                                ? () => ref
-                                      .read(visitedIdsProvider.notifier)
-                                      .toggle(restaurantId)
+                                ? () => _toggle(
+                                    context,
+                                    () => ref
+                                        .read(visitedIdsProvider.notifier)
+                                        .toggle(restaurantId),
+                                  )
                                 : null,
                             icon: Icon(
                               visited
@@ -322,10 +348,15 @@ class RestaurantDetailsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: WbSpacing.sm),
                     ref
-                        .watch(_summaryProvider(restaurantId))
+                        .watch(restaurantSummaryProvider(restaurantId))
                         .when(
                           loading: () => const WbSkeleton(height: 36),
-                          error: (_, _) => const SizedBox.shrink(),
+                          error: (_, _) => Text(
+                            'Recommendations could not be loaded.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                           data: (s) => s.tasters.isEmpty
                               ? Text(
                                   'No recommendations yet. Be the first.',

@@ -12,12 +12,18 @@ abstract class PushService {
   /// Ask for POST_NOTIFICATIONS permission and register the device token.
   Future<void> enableForCurrentUser();
 
-  /// Store/refresh a device token for the signed-in user.
-  Future<void> registerToken(String token, {String platform = 'android'});
+  /// Store/refresh a device token for the signed-in user. [platform]
+  /// defaults to the running platform ('ios' or 'android').
+  Future<void> registerToken(String token, {String? platform});
 
   /// Remove this device's token on sign-out.
   Future<void> unregisterToken(String token);
 }
+
+/// device_tokens.platform value for the device we are running on. Was
+/// previously hardcoded to 'android', which mislabelled every iOS token.
+String currentPushPlatform() =>
+    defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
 
 class NoopPushService implements PushService {
   NoopPushService(this._schema);
@@ -32,17 +38,14 @@ class NoopPushService implements PushService {
   }
 
   @override
-  Future<void> registerToken(
-    String token, {
-    String platform = 'android',
-  }) async {
+  Future<void> registerToken(String token, {String? platform}) async {
     // Token persistence works today; only token GENERATION needs Firebase.
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) return;
     await _schema.from('device_tokens').upsert({
       'user_id': uid,
       'token': token,
-      'platform': platform,
+      'platform': platform ?? currentPushPlatform(),
       'updated_at': DateTime.now().toIso8601String(),
     }, onConflict: 'token');
   }

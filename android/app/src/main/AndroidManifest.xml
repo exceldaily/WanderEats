@@ -8,10 +8,14 @@
     <!-- Push notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- allowBackup off: Auto Backup would otherwise sweep the Supabase
+         session (SharedPreferences) into the user's Google Drive, letting a
+         restore carry a live refresh token onto another device. -->
     <application
         android:label="WanderBites"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
 
         <!-- Google Maps SDK key, injected from local.properties (MAPS_API_KEY)
              via manifestPlaceholders in build.gradle.kts. Empty is fine for
@@ -19,6 +23,15 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}"/>
+
+        <!-- Status-bar icon for FCM pushes; without it Android silhouettes
+             the launcher icon into a solid blob. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notification"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent"/>
 
         <activity
             android:name=".MainActivity"

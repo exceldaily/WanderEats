@@ -175,25 +175,37 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       await ref.read(myProfileProvider.notifier).updateProfile(patch);
       if (mounted) Navigator.of(context).pop();
     } on AppException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<File?> _pick() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
-    return picked == null ? null : File(picked.path);
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      return picked == null ? null : File(picked.path);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open photo picker.')),
+        );
+      }
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(myProfileProvider).value;
     if (profile == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (!_initialized) {
       _initialized = true;
@@ -231,6 +243,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: InkWell(
               onTap: () async {
                 final f = await _pick();
+                if (!mounted) return;
                 if (f != null) setState(() => _newAvatar = f);
               },
               customBorder: const CircleBorder(),
@@ -252,6 +265,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: TextButton(
               onPressed: () async {
                 final f = await _pick();
+                if (!mounted) return;
                 if (f != null) setState(() => _newAvatar = f);
               },
               child: const Text('Change PFP'),

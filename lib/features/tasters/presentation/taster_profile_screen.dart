@@ -88,6 +88,17 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
     );
   }
 
+  Future<void> _toggleFollow(String tasterId) async {
+    try {
+      await ref.read(followingIdsProvider.notifier).toggle(tasterId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update follow. Try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -97,23 +108,32 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
     );
     final isMe = ref.watch(sessionProvider)?.user.id == widget.tasterId;
 
-    return Scaffold(
-      body: profile.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => WbErrorState(
+    return profile.when(
+      loading: () => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: WbErrorState(
           message: e.toString(),
           onRetry: () => ref.invalidate(tasterProfileProvider(widget.tasterId)),
         ),
-        data: (p) {
-          if (p == null) {
-            return const WbEmptyState(
+      ),
+      data: (p) {
+        if (p == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const WbEmptyState(
               icon: Icons.person_off_outlined,
               title: 'Profile not found',
-            );
-          }
-          final stats = ref.watch(tasterStatsProvider(p.id)).value;
+            ),
+          );
+        }
+        final stats = ref.watch(tasterStatsProvider(p.id)).value;
 
-          return Stack(
+        return Scaffold(
+          body: Stack(
             children: [
               CustomScrollView(
                 slivers: [
@@ -128,9 +148,7 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                           _FollowButton(
                             following: following,
                             enabled: ref.watch(isSignedInProvider),
-                            onPressed: () => ref
-                                .read(followingIdsProvider.notifier)
-                                .toggle(p.id),
+                            onPressed: () => _toggleFollow(p.id),
                           ),
                         if (!isMe) _MessageButton(peer: p),
                       ],
@@ -287,9 +305,9 @@ class _TasterProfileScreenState extends ConsumerState<TasterProfileScreen> {
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

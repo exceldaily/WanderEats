@@ -73,8 +73,19 @@ class TasteGroupsScreen extends ConsumerWidget {
     // the only denial that can appear for a signed-in account.
     final denial = denialFor(ref, PremiumEntitlement.createTasteGroups);
     if (denial != null) {
-      if (denial.canBeSolvedByUpgrading && context.mounted) {
+      if (!context.mounted) return;
+      if (denial.canBeSolvedByUpgrading) {
         unawaited(context.pushNamed(Routes.premium));
+      } else {
+        // Say why the button did nothing rather than appearing dead.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(switch (denial) {
+              EntitlementDenial.notSignedIn => 'Sign in to create a group.',
+              _ => 'Group creation is not available on this account.',
+            }),
+          ),
+        );
       }
       return;
     }

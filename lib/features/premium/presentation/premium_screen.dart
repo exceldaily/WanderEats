@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/services/analytics/analytics_service.dart';
 import '../data/billing_service.dart';
 import '../data/entitlement_service.dart';
 
@@ -28,6 +29,12 @@ final _offeringProvider = FutureProvider.autoDispose<Offering?>((ref) {
 class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   bool _busy = false;
   Package? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(analyticsProvider).subscriptionScreenViewed());
+  }
 
   @override
   Widget build(BuildContext context) {

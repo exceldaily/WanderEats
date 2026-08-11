@@ -20,13 +20,11 @@ abstract final class Routes {
   static const restaurant = 'restaurant';
   static const taster = 'taster';
   static const list = 'list';
-  static const listEdit = 'list-edit';
   static const createRecommendation = 'create-recommendation';
   static const editRecommendation = 'edit-recommendation';
   static const createList = 'create-list';
   static const search = 'search';
   static const biteswipe = 'biteswipe';
-  static const feed = 'feed';
   static const savedRestaurants = 'saved';
   static const visitedRestaurants = 'visited';
   static const settings = 'settings';

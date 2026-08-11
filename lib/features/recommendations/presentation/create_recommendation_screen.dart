@@ -98,20 +98,34 @@ class _CreateRecommendationScreenState
       return;
     }
     unawaited(_restoreDraft());
-    _body.addListener(_saveDraft);
-    _order.addListener(_saveDraft);
+    _body.addListener(_scheduleDraftSave);
+    _order.addListener(_scheduleDraftSave);
   }
 
   @override
   void dispose() {
+    _draftDebounce?.cancel();
     _body.dispose();
     _order.dispose();
     super.dispose();
   }
 
+  Timer? _draftDebounce;
+
+  /// Debounced draft persistence: writing SharedPreferences on every
+  /// keystroke is wasteful, so saves coalesce to one write per pause.
+  void _scheduleDraftSave() {
+    _draftDebounce?.cancel();
+    _draftDebounce = Timer(
+      const Duration(milliseconds: 500),
+      () => unawaited(_saveDraft()),
+    );
+  }
+
   Future<void> _restoreDraft() async {
     if (widget.initialRestaurant != null) return;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final raw = prefs.getString(_draftKey);
     if (raw == null) return;
     try {
@@ -148,8 +162,17 @@ class _CreateRecommendationScreenState
   }
 
   Future<void> _pickPhotos() async {
-    final picked = await ImagePicker().pickMultiImage(limit: 4);
-    if (picked.isEmpty) return;
+    final List<XFile> picked;
+    try {
+      picked = await ImagePicker().pickMultiImage(limit: 4);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open photo picker.')),
+      );
+      return;
+    }
+    if (!mounted || picked.isEmpty) return;
     setState(() {
       _photos
         ..clear()

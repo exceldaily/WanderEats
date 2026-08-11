@@ -42,8 +42,10 @@ class SavedIdsController extends AsyncNotifier<Set<String>> {
         await repo.unsave(session.user.id, restaurantId);
       }
     } catch (_) {
-      state = AsyncData(current); // roll back
-      rethrow;
+      // Roll back and swallow: callers fire this from VoidCallbacks, where a
+      // rethrow becomes an uncaught zone error (Crashlytics fatal) instead of
+      // feedback. The icon reverting is the failure signal.
+      state = AsyncData(current);
     }
   }
 }
@@ -84,8 +86,8 @@ class VisitedIdsController extends AsyncNotifier<Set<String>> {
         await repo.unmarkVisited(session.user.id, restaurantId);
       }
     } catch (_) {
+      // Same swallow-after-rollback contract as SavedIdsController.toggle.
       state = AsyncData(current);
-      rethrow;
     }
   }
 }

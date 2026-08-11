@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../core/errors/app_exception.dart';
 import '../../../core/networking/supabase_provider.dart';
-import '../../restaurants/domain/restaurant.dart';
 import '../domain/swipe_card.dart';
 
 /// Data access for BiteSwipe. Ranking lives in the `taste_deck` function, so
@@ -190,16 +189,6 @@ class BiteSwipeRepository {
     }
   }
 
-  /// Tasters who recommended this restaurant, for the preview sheet.
-  /// Reuses the same summary the map card and details screen already read,
-  /// so the deck cannot drift from what the rest of the app shows.
-  Future<RestaurantSummary> summary(String restaurantId) async {
-    final json = await _schema.rpc<Map<String, dynamic>>(
-      'restaurant_summary',
-      params: {'rid': restaurantId},
-    );
-    return RestaurantSummary.fromJson(json);
-  }
 }
 
 final biteSwipeRepositoryProvider = Provider<BiteSwipeRepository>(

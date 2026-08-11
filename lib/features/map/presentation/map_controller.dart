@@ -15,12 +15,20 @@ class MapFilters {
   final bool savedOnly;
   final int minRecs;
 
-  MapFilters copyWith({int? maxPrice, bool? savedOnly, int? minRecs}) =>
-      MapFilters(
-        maxPrice: maxPrice,
-        savedOnly: savedOnly ?? this.savedOnly,
-        minRecs: minRecs ?? this.minRecs,
-      );
+  static const _unset = Object();
+
+  // Sentinel keeps the nullable maxPrice both preservable (omitted) and
+  // clearable (explicit null); the old signature silently wiped it whenever
+  // any other filter changed.
+  MapFilters copyWith({
+    Object? maxPrice = _unset,
+    bool? savedOnly,
+    int? minRecs,
+  }) => MapFilters(
+    maxPrice: identical(maxPrice, _unset) ? this.maxPrice : maxPrice as int?,
+    savedOnly: savedOnly ?? this.savedOnly,
+    minRecs: minRecs ?? this.minRecs,
+  );
 
   bool get isActive => maxPrice != null || savedOnly || minRecs > 0;
 }

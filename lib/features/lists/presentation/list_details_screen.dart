@@ -51,6 +51,7 @@ class ListDetailsScreen extends ConsumerStatefulWidget {
 
 class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
   bool _mapView = false;
+  bool _sendingComment = false;
   final _comment = TextEditingController();
 
   @override
@@ -160,18 +161,27 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
     final list = ref.watch(listProvider(widget.listId));
     final myId = ref.watch(sessionProvider)?.user.id;
 
-    return Scaffold(
-      body: list.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => WbErrorState(
+    // Loading and error get their own Scaffold with an AppBar: the data
+    // branch's SliverAppBar is the only back affordance otherwise, which
+    // strands people on a spinner or a failure.
+    return list.when(
+      loading: () => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: WbErrorState(
           message: e.toString(),
           onRetry: () => ref.invalidate(listProvider(widget.listId)),
         ),
-        data: (l) {
-          final isOwner = myId == l.ownerId;
-          final places = ref.watch(listPlacesProvider(widget.listId));
-          final meta = ref.watch(listMetaProvider(widget.listId)).value;
-          return CustomScrollView(
+      ),
+      data: (l) {
+        final isOwner = myId == l.ownerId;
+        final places = ref.watch(listPlacesProvider(widget.listId));
+        final meta = ref.watch(listMetaProvider(widget.listId)).value;
+        return Scaffold(
+          body: CustomScrollView(
             slivers: [
               SliverAppBar(
                 expandedHeight: 180,
@@ -277,16 +287,41 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                                         final repo = ref.read(
                                           listRepositoryProvider,
                                         );
-                                        if (follows) {
-                                          await repo.unfollowList(myId, l.id);
-                                        } else {
-                                          await repo.followList(myId, l.id);
-                                          unawaited(
-                                            ref
-                                                .read(analyticsProvider)
-                                                .listFollowed(listId: l.id),
+                                        try {
+                                          if (follows) {
+                                            await repo.unfollowList(
+                                              myId,
+                                              l.id,
+                                            );
+                                          } else {
+                                            await repo.followList(myId, l.id);
+                                            if (!mounted) return;
+                                            unawaited(
+                                              ref
+                                                  .read(analyticsProvider)
+                                                  .listFollowed(listId: l.id),
+                                            );
+                                          }
+                                        } on AppException catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(content: Text(e.message)),
                                           );
+                                          return;
+                                        } catch (_) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Could not update.'),
+                                            ),
+                                          );
+                                          return;
                                         }
+                                        if (!mounted) return;
                                         ref.invalidate(
                                           listMetaProvider(widget.listId),
                                         );
@@ -309,13 +344,34 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                               onPressed: myId == null
                                   ? null
                                   : () async {
-                                      await ref
-                                          .read(listRepositoryProvider)
-                                          .toggleLike(
-                                            myId,
-                                            l.id,
-                                            meta?['i_like'] != true,
-                                          );
+                                      try {
+                                        await ref
+                                            .read(listRepositoryProvider)
+                                            .toggleLike(
+                                              myId,
+                                              l.id,
+                                              meta?['i_like'] != true,
+                                            );
+                                      } on AppException catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(e.message)),
+                                        );
+                                        return;
+                                      } catch (_) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Could not update.'),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (!mounted) return;
                                       ref.invalidate(
                                         listMetaProvider(widget.listId),
                                       );
@@ -434,17 +490,49 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.send),
-                              onPressed: () async {
-                                final body = _comment.text.trim();
-                                if (body.isEmpty) return;
-                                await ref
-                                    .read(listRepositoryProvider)
-                                    .addComment(myId, l.id, body);
-                                _comment.clear();
-                                ref.invalidate(
-                                  listCommentsProvider(widget.listId),
-                                );
-                              },
+                              // Disabled while a send is in flight, so a
+                              // double tap cannot post the comment twice.
+                              onPressed: _sendingComment
+                                  ? null
+                                  : () async {
+                                      final body = _comment.text.trim();
+                                      if (body.isEmpty) return;
+                                      setState(() => _sendingComment = true);
+                                      try {
+                                        await ref
+                                            .read(listRepositoryProvider)
+                                            .addComment(myId, l.id, body);
+                                        if (!mounted) return;
+                                        _comment.clear();
+                                        ref.invalidate(
+                                          listCommentsProvider(widget.listId),
+                                        );
+                                      } on AppException catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(e.message)),
+                                        );
+                                      } catch (_) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Could not post comment.',
+                                            ),
+                                          ),
+                                        );
+                                      } finally {
+                                        if (mounted) {
+                                          setState(
+                                            () => _sendingComment = false,
+                                          );
+                                        }
+                                      }
+                                    },
                             ),
                           ],
                         ),
@@ -467,9 +555,9 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: WbSpacing.xl)),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -492,9 +580,25 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
           final reordered = [...items];
           final moved = reordered.removeAt(oldIndex);
           reordered.insert(newIndex, moved);
-          await ref
-              .read(listRepositoryProvider)
-              .reorder(widget.listId, reordered.map((e) => e.entryId).toList());
+          try {
+            await ref.read(listRepositoryProvider).reorder(
+              widget.listId,
+              reordered.map((e) => e.entryId).toList(),
+            );
+          } on AppException catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(e.message)));
+          } catch (_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Could not update.')));
+          }
+          // Refetch either way: on failure the list snaps back to the
+          // server's order.
+          if (!mounted) return;
           ref.invalidate(listPlacesProvider(widget.listId));
         },
         itemBuilder: (context, i) => KeyedSubtree(
@@ -503,9 +607,21 @@ class _ListDetailsScreenState extends ConsumerState<ListDetailsScreen> {
             place: items[i],
             index: i,
             onRemove: () async {
-              await ref
-                  .read(listRepositoryProvider)
-                  .removeEntry(items[i].entryId);
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref
+                    .read(listRepositoryProvider)
+                    .removeEntry(items[i].entryId);
+              } on AppException catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text(e.message)));
+                return;
+              } catch (_) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Could not update.')),
+                );
+                return;
+              }
+              if (!mounted) return;
               ref.invalidate(listPlacesProvider(widget.listId));
             },
           ),

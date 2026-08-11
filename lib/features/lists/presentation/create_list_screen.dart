@@ -26,6 +26,11 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
   bool _busy = false;
   String? _error;
 
+  /// Restaurant id handed over as route extra (BiteSwipe's "Add to list");
+  /// the new list is seeded with it after creation.
+  String? _initialRestaurantId;
+  bool _extraRead = false;
+
   @override
   void dispose() {
     _title.dispose();
@@ -55,6 +60,15 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
             isCollaborative: _collaborative,
           );
       unawaited(ref.read(analyticsProvider).listCreated(listId: list.id));
+      if (_initialRestaurantId != null) {
+        await ref
+            .read(listRepositoryProvider)
+            .addRestaurant(
+              listId: list.id,
+              restaurantId: _initialRestaurantId!,
+              addedBy: session.user.id,
+            );
+      }
       if (mounted) {
         context.pushReplacementNamed(
           Routes.list,
@@ -62,7 +76,7 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
         );
       }
     } on AppException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -70,6 +84,11 @@ class _CreateListScreenState extends ConsumerState<CreateListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_extraRead) {
+      _extraRead = true;
+      final extra = GoRouterState.of(context).extra;
+      _initialRestaurantId = extra is String ? extra : null;
+    }
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('New list')),

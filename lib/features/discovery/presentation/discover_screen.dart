@@ -42,13 +42,14 @@ final suggestedTastersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
       final signedIn = ref.watch(isSignedInProvider);
       if (!signedIn) return [];
+      // Hoist the repo watch above the await: watching after an async gap is
+      // unsupported in Riverpod 3 and can throw on a disposed container.
+      final repo = ref.watch(discoveryRepositoryProvider);
       final position = await ref.watch(_currentPositionProvider.future);
-      return ref
-          .watch(discoveryRepositoryProvider)
-          .suggestedTasters(
-            nearLat: position?.latitude,
-            nearLng: position?.longitude,
-          );
+      return repo.suggestedTasters(
+        nearLat: position?.latitude,
+        nearLng: position?.longitude,
+      );
     });
 
 final trendingRestaurantsProvider =

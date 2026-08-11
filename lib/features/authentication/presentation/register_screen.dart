@@ -41,6 +41,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref
           .read(authRepositoryProvider)
           .signUpWithEmail(email: _email.text.trim(), password: _password.text);
+      if (!mounted) return;
       await ref.read(analyticsProvider).signUpCompleted(method: 'email');
       if (!mounted) return;
       if (ref.read(authRepositoryProvider).currentSession != null) {
@@ -58,6 +59,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.goNamed(Routes.signIn);
       }
     } on AppException catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);

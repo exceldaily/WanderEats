@@ -40,6 +40,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           .signInWithEmail(email: _email.text.trim(), password: _password.text);
       if (mounted) context.goNamed(Routes.map);
     } on AppException catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);

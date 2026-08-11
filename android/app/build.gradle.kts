@@ -44,7 +44,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.wanderbites.app"
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         minSdk = flutter.minSdkVersion
@@ -66,6 +65,15 @@ android {
 
     buildTypes {
         release {
+            // Debug fallback keeps fresh clones building, but a debug-signed
+            // release AAB fails only at Play upload with a cryptic
+            // fingerprint error, so make the fallback loud.
+            if (!hasReleaseKeystore) {
+                logger.warn(
+                    "WARNING: key.properties not found - RELEASE build will be " +
+                        "DEBUG-SIGNED and Play will reject it."
+                )
+            }
             signingConfig = if (hasReleaseKeystore)
                 signingConfigs.getByName("release")
             else

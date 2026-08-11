@@ -70,10 +70,19 @@ class NotificationsScreen extends ConsumerWidget {
           if (session != null)
             TextButton(
               onPressed: () async {
-                await ref
-                    .read(notificationRepositoryProvider)
-                    .markAllRead(session.user.id);
-                ref.invalidate(notificationsProvider);
+                try {
+                  await ref
+                      .read(notificationRepositoryProvider)
+                      .markAllRead(session.user.id);
+                  ref.invalidate(notificationsProvider);
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not mark all read. Try again.'),
+                    ),
+                  );
+                }
               },
               child: const Text('Mark all read'),
             ),
@@ -140,14 +149,29 @@ class NotificationsScreen extends ConsumerWidget {
                               final repo = ref.read(
                                 notificationRepositoryProvider,
                               );
-                              await repo.markRead(n.id);
-                              ref.invalidate(notificationsProvider);
-                              final target = await repo.resolveTarget(n);
-                              if (target != null && context.mounted) {
-                                unawaited(
-                                  context.pushNamed(
-                                    target.$1,
-                                    pathParameters: target.$2,
+                              try {
+                                await repo.markRead(n.id);
+                                ref.invalidate(notificationsProvider);
+                                final target = await repo.resolveTarget(n);
+                                if (!context.mounted) return;
+                                if (target != null) {
+                                  unawaited(
+                                    context.pushNamed(
+                                      target.$1,
+                                      pathParameters: target.$2,
+                                    ),
+                                  );
+                                } else if (n.type == 'badge') {
+                                  // Badges live on the profile tab.
+                                  context.goNamed(Routes.profile);
+                                }
+                              } catch (_) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Could not open that notification.',
+                                    ),
                                   ),
                                 );
                               }

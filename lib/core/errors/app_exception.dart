@@ -42,8 +42,3 @@ class ServerException extends AppException {
         cause: cause,
       );
 }
-
-class OfflineDataException extends AppException {
-  const OfflineDataException()
-    : super('You are offline and this has not been cached yet.');
-}

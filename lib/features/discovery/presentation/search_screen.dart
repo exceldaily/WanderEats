@@ -59,6 +59,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _loadRecent() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() => _recent = prefs.getStringList(_recentKey) ?? []);
   }
 
@@ -124,14 +125,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _searchGlobal(String query) async {
     setState(() => _globalLoading = true);
-    final global = await ref
-        .read(discoveryRepositoryProvider)
-        .searchGlobal(query);
-    if (!mounted || _controller.text.trim() != query) return;
-    setState(() {
-      _global = global;
-      _globalLoading = false;
-    });
+    try {
+      final global = await ref
+          .read(discoveryRepositoryProvider)
+          .searchGlobal(query);
+      if (!mounted || _controller.text.trim() != query) return;
+      setState(() => _global = global);
+    } catch (_) {
+      // Global reach is best-effort; the local results are already shown.
+    } finally {
+      // Always cleared, even when the query went stale mid-flight, so the
+      // worldwide spinner cannot get stuck.
+      if (mounted) setState(() => _globalLoading = false);
+    }
   }
 
   /// Send the map to a searched place. The map imports restaurants for the

@@ -55,7 +55,15 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
 
   bool get _isLast => _page == _pages.length - 1;
 
-  void _leave() => context.goNamed(Routes.map);
+  // Replaying the tour from Settings should land back on Settings; only the
+  // post-onboarding run (nothing to pop) falls through to the map.
+  void _leave() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(Routes.map);
+    }
+  }
 
   void _next() {
     if (_isLast) {
@@ -85,10 +93,14 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
               alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.all(WbSpacing.sm),
-                child: TextButton(
-                  onPressed: _isLast ? null : _leave,
-                  child: Text(_isLast ? '' : 'Skip'),
-                ),
+                child: _isLast
+                    // Keeps the header height stable without a disabled
+                    // empty-label button lingering on the last page.
+                    ? const SizedBox(height: 48)
+                    : TextButton(
+                        onPressed: _leave,
+                        child: const Text('Skip'),
+                      ),
               ),
             ),
             Expanded(
