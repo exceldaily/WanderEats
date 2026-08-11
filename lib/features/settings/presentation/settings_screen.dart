@@ -108,6 +108,20 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Support tools, only rendered for admin accounts. The server
+                // re-checks is_admin on every call, so this is visibility,
+                // not security.
+                if (ref.watch(myProfileProvider).value?.isAdmin ?? false) ...[
+                  _Header('Support'),
+                  ListTile(
+                    leading: const Icon(Icons.support_agent_outlined),
+                    title: const Text('Admin tools'),
+                    subtitle: const Text(
+                      'Find accounts, fix issues, review reports',
+                    ),
+                    onTap: () => context.pushNamed(Routes.admin),
+                  ),
+                ],
                 _Header(l10n.settingsAccount),
                 ListTile(
                   leading: const Icon(Icons.workspace_premium_outlined),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/admin/presentation/admin_screen.dart';
 import '../../features/authentication/presentation/forgot_password_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/presentation/register_screen.dart';
@@ -237,6 +238,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: Routes.premium,
         redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        name: Routes.admin,
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
+        builder: (_, _) => const AdminScreen(),
       ),
       GoRoute(
         path: '/trips',
