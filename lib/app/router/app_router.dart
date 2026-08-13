@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/services/flags/remote_flags.dart';
 import '../../features/admin/presentation/admin_screen.dart';
 import '../../features/authentication/presentation/forgot_password_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
@@ -43,9 +44,25 @@ import 'shell_scaffold.dart';
 /// Routes that require a signed-in user; everything else supports guests.
 const _authRequiredPaths = {'/create', '/notifications'};
 
+/// Routes a signed-out user may still reach when guest browsing is disabled
+/// by the `require_account_to_browse` remote flag.
+const _guestAlwaysAllowedPaths = {
+  '/splash',
+  '/welcome',
+  '/sign-in',
+  '/register',
+  '/forgot-password',
+};
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefreshNotifier();
   ref.onDispose(refresh.dispose);
+
+  // The flag resolves shortly after launch; re-run redirects when it lands so
+  // a guest already sitting on the map gets walled off without a restart.
+  ref.listen(requireAccountToBrowseProvider, (_, _) {
+    refresh.ping();
+  });
 
   return GoRouter(
     initialLocation: '/splash',
@@ -53,6 +70,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final signedIn = _hasSession();
       final path = state.uri.path;
+      final guestsBlocked =
+          ref.read(requireAccountToBrowseProvider).value ?? false;
+      if (!signedIn &&
+          guestsBlocked &&
+          !_guestAlwaysAllowedPaths.contains(path)) {
+        return '/welcome';
+      }
       if (!signedIn && _authRequiredPaths.contains(path)) {
         return '/welcome';
       }
@@ -321,6 +345,10 @@ class _AuthRefreshNotifier extends ChangeNotifier {
       // Supabase not initialized: router works without auth.
     }
   }
+
+  /// Re-runs router redirects for non-auth events (e.g. a remote flag
+  /// resolving after launch).
+  void ping() => notifyListeners();
 
   StreamSubscription<AuthState>? _sub;
 
