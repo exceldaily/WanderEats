@@ -6,6 +6,8 @@ import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/links/safe_link.dart';
+import '../../../core/services/update/update_prompt.dart';
+import '../../../core/services/update/update_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../authentication/presentation/auth_providers.dart';
@@ -149,6 +151,12 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.system_update_outlined),
+                  title: const Text('Check for updates'),
+                  subtitle: const Text('See whether a newer version is out'),
+                  onTap: () => _checkForUpdates(context, ref),
+                ),
                 // Support tools, only rendered for admin accounts. The server
                 // re-checks is_admin on every call, so this is visibility,
                 // not security.
@@ -273,6 +281,27 @@ class SettingsScreen extends ConsumerWidget {
         ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
+  }
+
+  /// Manual version check. Unlike the launch prompt this always reports back,
+  /// because silence in response to a deliberate tap reads as a broken button.
+  Future<void> _checkForUpdates(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Checking for updates...')),
+    );
+
+    final status = await ref.read(updateServiceProvider).check();
+    if (!context.mounted) return;
+
+    messenger.hideCurrentSnackBar();
+    if (!status.isAvailable) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('You are on the latest version.')),
+      );
+      return;
+    }
+    await UpdatePrompt.show(context, ref, status);
   }
 }
 
