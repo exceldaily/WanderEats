@@ -52,6 +52,46 @@ class RestaurantRepository {
     }
   }
 
+  /// Bounded read for one map lens.
+  ///
+  /// Each lens has its own RPC so the filtering happens next to the data.
+  /// Doing it client-side over [inBounds] would silently drop results: that
+  /// query caps at 200 rows ranked by popularity, so a quiet place the user
+  /// saved can be truncated away before any filter sees it.
+  ///
+  /// Deliberately does not touch the offline marker cache - that cache holds
+  /// the everything-lens view, and overwriting it with a narrow lens would
+  /// leave the user offline with a near-empty map.
+  Future<List<RestaurantMarker>> inBoundsForLens({
+    required String rpc,
+    required double minLng,
+    required double minLat,
+    required double maxLng,
+    required double maxLat,
+    int maxRows = 200,
+  }) async {
+    try {
+      final rows = await _schema.rpc<List<dynamic>>(
+        rpc,
+        params: {
+          'min_lng': minLng,
+          'min_lat': minLat,
+          'max_lng': maxLng,
+          'max_lat': maxLat,
+          'max_rows': maxRows,
+        },
+      );
+      return rows
+          .cast<Map<String, dynamic>>()
+          .map(RestaurantMarker.fromJson)
+          .toList();
+    } on PostgrestException catch (e) {
+      throw ServerException(cause: e);
+    } catch (e) {
+      throw NetworkException(cause: e);
+    }
+  }
+
   Future<List<RestaurantMarker>> nearby({
     required double lng,
     required double lat,

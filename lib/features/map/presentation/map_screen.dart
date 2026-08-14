@@ -18,8 +18,10 @@ import '../../restaurants/presentation/restaurant_actions.dart';
 import '../data/map_style_service.dart';
 import '../domain/map_basemap.dart';
 import '../domain/map_clustering.dart';
+import '../domain/map_lens.dart';
 import '../domain/map_marker_style.dart';
 import 'basemap_sheet.dart';
+import 'lens_sheet.dart';
 import 'map_controller.dart';
 import 'map_marker_layer.dart';
 import 'restaurant_preview_card.dart';
@@ -323,6 +325,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       const Expanded(child: _MapSearchBar()),
                       const SizedBox(width: WbSpacing.sm),
                       _RoundButton(
+                        icon: mapState.lens.icon,
+                        tooltip: 'Map lens: ${mapState.lens.label}',
+                        highlighted: mapState.lens != MapLens.everything,
+                        onTap: () => LensSheet.show(context),
+                      ),
+                      const SizedBox(width: WbSpacing.sm),
+                      _RoundButton(
                         icon: Icons.layers_outlined,
                         tooltip: 'Map style',
                         onTap: () => BasemapSheet.show(context),
@@ -443,6 +452,57 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
             ),
 
+          // A lens with nothing in it needs to explain itself. Without this an
+          // empty Following map is indistinguishable from a broken one.
+          if (!_listView &&
+              !mapState.loading &&
+              !mapState.importing &&
+              visible.isEmpty &&
+              mapState.lens != MapLens.everything)
+            Positioned(
+              left: WbSpacing.lg,
+              right: WbSpacing.lg,
+              bottom: WbSpacing.xl * 2,
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(WbRadius.card),
+                elevation: WbElevation.sheet,
+                child: Padding(
+                  padding: const EdgeInsets.all(WbSpacing.lg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        mapState.lens.icon,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: WbSpacing.sm),
+                      Text(
+                        mapState.lens.emptyTitle,
+                        style: Theme.of(context).textTheme.titleSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        mapState.lens.emptyMessage,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: WbSpacing.sm),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(mapControllerProvider.notifier)
+                            .setLens(MapLens.everything),
+                        child: const Text('Show everything'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Draggable preview card
           if (mapState.selected != null && !_listView)
             RestaurantPreviewCard(
@@ -461,19 +521,29 @@ class _RoundButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.tooltip,
+    this.highlighted = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;
 
+  /// Marks a control that is currently changing what the map shows, so an
+  /// active lens is visible without opening the sheet to check.
+  final bool highlighted;
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      color: highlighted ? scheme.primary : scheme.surfaceContainerLow,
       shape: const CircleBorder(),
       elevation: WbElevation.raisedCard,
-      child: IconButton(tooltip: tooltip, icon: Icon(icon), onPressed: onTap),
+      child: IconButton(
+        tooltip: tooltip,
+        icon: Icon(icon, color: highlighted ? scheme.onPrimary : null),
+        onPressed: onTap,
+      ),
     );
   }
 }

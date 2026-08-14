@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../restaurants/data/places_repository.dart';
 import '../../restaurants/data/restaurant_repository.dart';
 import '../../restaurants/domain/restaurant.dart';
+import '../domain/map_lens.dart';
 
 /// Map filters kept deliberately small for Phase 1.
 class MapFilters {
@@ -42,10 +43,15 @@ class MapViewState {
     this.selectedId,
     this.boundsDirty = false,
     this.importing = false,
+    this.lens = MapLens.everything,
   });
 
   final List<RestaurantMarker> markers;
   final bool loading;
+
+  /// Which map the user is looking at. Changes what is queried, not just what
+  /// is drawn.
+  final MapLens lens;
 
   /// True when the markers came from the offline cache.
   final bool offline;
@@ -70,6 +76,7 @@ class MapViewState {
     String? Function()? selectedId,
     bool? boundsDirty,
     bool? importing,
+    MapLens? lens,
   }) => MapViewState(
     markers: markers ?? this.markers,
     loading: loading ?? this.loading,
@@ -78,6 +85,7 @@ class MapViewState {
     selectedId: selectedId != null ? selectedId() : this.selectedId,
     boundsDirty: boundsDirty ?? this.boundsDirty,
     importing: importing ?? this.importing,
+    lens: lens ?? this.lens,
   );
 }
 
@@ -163,6 +171,28 @@ class MapViewController extends Notifier<MapViewState> {
     state = state.copyWith(loading: true);
     try {
       final repo = ref.read(restaurantRepositoryProvider);
+      final lens = state.lens;
+
+      // A lens narrows the query itself. The everything-lens keeps the
+      // original path because it is the only one that feeds the offline cache
+      // and the external-provider import below.
+      if (lens != MapLens.everything) {
+        final markers = await repo.inBoundsForLens(
+          rpc: _rpcForLens(lens),
+          minLng: bounds.southwest.longitude,
+          minLat: bounds.southwest.latitude,
+          maxLng: bounds.northeast.longitude,
+          maxLat: bounds.northeast.latitude,
+        );
+        state = state.copyWith(
+          markers: markers,
+          loading: false,
+          offline: false,
+          boundsDirty: false,
+        );
+        return;
+      }
+
       var markers = await repo.inBounds(
         minLng: bounds.southwest.longitude,
         minLat: bounds.southwest.latitude,
@@ -238,6 +268,23 @@ class MapViewController extends Notifier<MapViewState> {
   void setFilters(MapFilters filters) {
     state = state.copyWith(filters: filters);
   }
+
+  /// Switches lens and re-queries the current viewport immediately. A lens
+  /// change with a stale marker set on screen would read as a broken control.
+  void setLens(MapLens lens) {
+    if (lens == state.lens) return;
+    state = state.copyWith(lens: lens, selectedId: () => null);
+    final bounds = _lastBounds;
+    if (bounds != null) unawaited(_query(bounds));
+  }
+
+  static String _rpcForLens(MapLens lens) => switch (lens) {
+    MapLens.following => 'following_map_markers',
+    MapLens.saved => 'saved_map_markers',
+    MapLens.visited => 'visited_map_markers',
+    MapLens.hiddenGems => 'hidden_gems_in_bounds',
+    MapLens.everything => 'restaurants_in_bounds',
+  };
 
   /// Filters applied client-side over the current bounded result set.
   List<RestaurantMarker> visibleMarkers(Set<String> savedIds) {
