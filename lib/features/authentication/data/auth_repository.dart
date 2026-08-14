@@ -21,7 +21,15 @@ class AuthRepository {
     required String password,
   }) async {
     try {
-      await _client.auth.signUp(email: email, password: password);
+      // Confirmation emails land on the WanderBites confirmed page, which
+      // hands off to the app via the wanderbites:// deep link. Without this
+      // the link falls back to the Supabase project's site URL, which is not
+      // WanderBites (shared project).
+      await _client.auth.signUp(
+        email: email,
+        password: password,
+        emailRedirectTo: 'https://wanderbites-gamma.vercel.app/confirmed',
+      );
     } on sb.AuthException catch (e) {
       throw AuthException(_friendly(e), cause: e);
     }

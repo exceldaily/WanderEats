@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email confirmed — WanderBites</title>
+<meta name="description" content="Your WanderBites email is confirmed. Open the app and sign in.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <img src="/logo.png" alt="">
+    <a href="/">WanderBites</a>
+    <nav>
+      <a href="/privacy">Privacy</a>
+      <a href="/delete-account">Delete account</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1 id="headline">Email confirmed 🎉</h1>
+  <p id="detail">Your WanderBites account is ready. Head back to the app and
+  sign in with your email and password.</p>
+
+  <p><a id="open-app" href="wanderbites://callback"
+        style="display:inline-block;padding:12px 24px;border-radius:999px;background:#E4593B;color:#fff;text-decoration:none;font-weight:600">
+    Open WanderBites</a></p>
+
+  <p class="updated">Reading this on a computer? Just open the app on your
+  phone and sign in, nothing else to do here.</p>
+</main>
+
+<script>
+  // Supabase reports expired or invalid links in the URL fragment; surface
+  // that instead of a false success.
+  (function () {
+    var h = new URLSearchParams(location.hash.replace(/^#/, ''));
+    var q = new URLSearchParams(location.search);
+    var desc = h.get('error_description') || q.get('error_description');
+    if (desc) {
+      document.getElementById('headline').textContent = 'Link problem';
+      document.getElementById('detail').textContent =
+        desc + '. Open the app and sign in; if your email is not confirmed ' +
+        'yet, the sign-in screen can send a fresh link.';
+    }
+  })();
+</script>
+</body>
+</html>
