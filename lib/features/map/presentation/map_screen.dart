@@ -16,8 +16,10 @@ import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/domain/restaurant.dart';
 import '../../restaurants/presentation/restaurant_actions.dart';
 import '../data/map_style_service.dart';
+import '../domain/map_basemap.dart';
 import '../domain/map_clustering.dart';
 import '../domain/map_marker_style.dart';
+import 'basemap_sheet.dart';
 import 'map_controller.dart';
 import 'map_marker_layer.dart';
 import 'restaurant_preview_card.dart';
@@ -277,8 +279,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
     }
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final basemap = ref.watch(mapBasemapProvider).value ?? MapBasemap.auto;
     final style = ref
-        .watch(mapStyleProvider(Theme.of(context).brightness))
+        .watch(mapStyleProvider((basemap: basemap, dark: dark)))
         .value;
 
     return Scaffold(
@@ -286,9 +290,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: _initialCamera,
-            // The WanderBites basemap: warm, decluttered, and dark-aware, so
-            // the app's own content is the brightest thing on screen.
+            // The WanderBites basemap: decluttered and brightness-adjustable,
+            // so the app's own content is the most important thing on screen.
             style: style,
+            // Terrain and satellite are Google's own raster layers; they
+            // ignore styling, which is why they are a map type rather than
+            // another style asset.
+            mapType: switch (basemap) {
+              MapBasemap.terrain => MapType.terrain,
+              MapBasemap.satellite => MapType.hybrid,
+              _ => MapType.normal,
+            },
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -308,17 +320,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: _FilterBar()),
+                      const Expanded(child: _MapSearchBar()),
                       const SizedBox(width: WbSpacing.sm),
                       _RoundButton(
-                        icon: Icons.style_outlined,
-                        tooltip: 'BiteSwipe',
-                        onTap: () {
-                          unawaited(
-                            ref.read(analyticsProvider).deckOpened(from: 'map'),
-                          );
-                          context.pushNamed(Routes.biteswipe);
-                        },
+                        icon: Icons.layers_outlined,
+                        tooltip: 'Map style',
+                        onTap: () => BasemapSheet.show(context),
                       ),
                       const SizedBox(width: WbSpacing.sm),
                       _RoundButton(
@@ -327,6 +334,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         onTap: () => setState(() => _listView = !_listView),
                       ),
                     ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: WbSpacing.sm),
+                    child: _FilterBar(),
                   ),
                   if (mapState.offline)
                     Padding(
@@ -467,7 +478,62 @@ class _RoundButton extends StatelessWidget {
   }
 }
 
+/// The map's search entry point.
+///
+/// Looks like a field but is a button: search is a full screen with its own
+/// keyboard handling and result grouping, so typing here would mean running
+/// two search UIs. Tapping opens the real one, which can already fly the map
+/// to whatever the user picks.
+class _MapSearchBar extends StatelessWidget {
+  const _MapSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      elevation: WbElevation.raisedCard,
+      borderRadius: BorderRadius.circular(WbRadius.pill),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(WbRadius.pill),
+        onTap: () => context.pushNamed(Routes.search),
+        child: Semantics(
+          button: true,
+          label: 'Search restaurants, Tasters, lists and places',
+          child: Container(
+            height: kWbMinTouchTarget,
+            padding: const EdgeInsets.symmetric(horizontal: WbSpacing.md),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.search,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: WbSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Search places, Tasters, lists',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FilterBar extends ConsumerWidget {
+  const _FilterBar();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filters = ref.watch(mapControllerProvider).filters;
