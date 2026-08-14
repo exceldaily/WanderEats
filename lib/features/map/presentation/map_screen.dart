@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,11 @@ import '../../../core/utils/plural.dart';
 import '../../../core/widgets/wb_states.dart';
 import '../../restaurants/domain/restaurant.dart';
 import '../../restaurants/presentation/restaurant_actions.dart';
+import '../data/map_style_service.dart';
+import '../domain/map_clustering.dart';
+import '../domain/map_marker_style.dart';
 import 'map_controller.dart';
+import 'map_marker_layer.dart';
 import 'restaurant_preview_card.dart';
 
 /// The product centerpiece: full-screen map, bounded marker queries,
@@ -30,6 +35,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   GoogleMapController? _map;
   bool _listView = false;
 
+  /// Branded pins and cluster bubbles. Created lazily because it needs the
+  /// device pixel ratio, which is not available until the first build.
+  MapMarkerLayer? _markerLayer;
+
+  /// The marker set currently on the map. Rasterising pins is async, so the
+  /// build cannot produce them inline: it renders what is ready and schedules
+  /// a rebuild when the next set finishes.
+  Set<Marker> _markers = const {};
+
+  /// Guards against an older, slower marker build overwriting a newer one
+  /// after a fast pan.
+  int _markerGeneration = 0;
+
+  /// Last inputs the marker set was built from, so an unrelated rebuild does
+  /// not kick off redundant rasterisation.
+  String? _markerSignature;
+
+  /// Camera zoom, kept in sync so clustering can react to it.
+  double _zoom = 12;
+
+  static const _clusterer = WbClusterer();
+
   // Default camera: over the seeded world; recenters on the user when
   // permission is granted.
   static const _initialCamera = CameraPosition(
@@ -39,8 +66,92 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   void dispose() {
+    _markerLayer?.dispose();
     _map?.dispose();
     super.dispose();
+  }
+
+  /// Clusters the visible restaurants, rasterises their pins, and swaps the
+  /// result in. Cheap on repeat: both the clusterer and the bitmap cache are
+  /// keyed so an unchanged view does no work.
+  Future<void> _rebuildMarkers({
+    required List<RestaurantMarker> visible,
+    required Set<String> savedIds,
+    required Set<String> visitedIds,
+    required String? selectedId,
+  }) async {
+    final layer = _markerLayer ??= MapMarkerLayer(
+      pixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
+
+    WbMarkerKind kindOf(RestaurantMarker m) {
+      if (m.id == selectedId) return WbMarkerKind.selected;
+      if (savedIds.contains(m.id)) return WbMarkerKind.saved;
+      if (visitedIds.contains(m.id)) return WbMarkerKind.visited;
+      return WbMarkerKind.standard;
+    }
+
+    final items = _clusterer.cluster(
+      markers: visible,
+      zoom: _zoom,
+      kindOf: kindOf,
+    );
+
+    final generation = ++_markerGeneration;
+    final built = await layer.build(
+      items: items,
+      onRestaurantTap: (m) {
+        ref.read(mapControllerProvider.notifier).select(m.id);
+        unawaited(ref.read(analyticsProvider).markerSelected(restaurantId: m.id));
+      },
+      onClusterTap: (item) => unawaited(_zoomToCluster(item)),
+    );
+
+    // A newer build finished first; discard this one rather than regressing
+    // the map to an older state.
+    if (!mounted || generation != _markerGeneration) return;
+    setState(() => _markers = built);
+  }
+
+  /// Tapping a cluster flies into it rather than dumping a list: the map is
+  /// the interface, so the answer to "what is in here" is a closer look.
+  Future<void> _zoomToCluster(WbMapItem item) async {
+    final map = _map;
+    if (map == null || item.members.isEmpty) return;
+
+    var minLat = item.members.first.lat;
+    var maxLat = minLat;
+    var minLng = item.members.first.lng;
+    var maxLng = minLng;
+    for (final m in item.members) {
+      minLat = math.min(minLat, m.lat);
+      maxLat = math.max(maxLat, m.lat);
+      minLng = math.min(minLng, m.lng);
+      maxLng = math.max(maxLng, m.lng);
+    }
+
+    // Members can sit on the same coordinate (a food hall, a mall). A zero-area
+    // bounds throws on Android, so nudge the box open.
+    const epsilon = 0.0008;
+    if ((maxLat - minLat).abs() < epsilon) {
+      minLat -= epsilon;
+      maxLat += epsilon;
+    }
+    if ((maxLng - minLng).abs() < epsilon) {
+      minLng -= epsilon;
+      maxLng += epsilon;
+    }
+
+    unawaited(ref.read(analyticsProvider).mapClusterOpened(count: item.count));
+    await map.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        64,
+      ),
+    );
   }
 
   @override
@@ -107,6 +218,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
+  /// Zoom drives clustering, so track it as the camera moves. Only a change
+  /// that crosses a whole zoom step can alter the grouping, which keeps this
+  /// from rebuilding markers during every frame of a pinch.
+  void _onCameraMove(CameraPosition position) {
+    if (position.zoom.floor() == _zoom.floor()) {
+      _zoom = position.zoom;
+      return;
+    }
+    setState(() => _zoom = position.zoom);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Search hands the map a place to fly to; act on it once it arrives.
@@ -134,52 +256,48 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         .read(mapControllerProvider.notifier)
         .visibleMarkers(savedIds);
 
+    // Rasterising pins is async, so it cannot happen inline in build(). Kick it
+    // off only when something that changes the pins actually changed.
+    final signature = [
+      visible.map((m) => m.id).join(','),
+      savedIds.length,
+      visitedIds.length,
+      mapState.selectedId,
+      _zoom.floor(),
+    ].join('|');
+    if (signature != _markerSignature) {
+      _markerSignature = signature;
+      unawaited(
+        _rebuildMarkers(
+          visible: visible,
+          savedIds: savedIds,
+          visitedIds: visitedIds,
+          selectedId: mapState.selectedId,
+        ),
+      );
+    }
+
+    final style = ref
+        .watch(mapStyleProvider(Theme.of(context).brightness))
+        .value;
+
     return Scaffold(
       body: Stack(
         children: [
           GoogleMap(
             initialCameraPosition: _initialCamera,
+            // The WanderBites basemap: warm, decluttered, and dark-aware, so
+            // the app's own content is the brightest thing on screen.
+            style: style,
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             onMapCreated: (c) => _map = c,
             onCameraIdle: _onCameraIdle,
+            onCameraMove: _onCameraMove,
             onTap: (_) => ref.read(mapControllerProvider.notifier).select(null),
-            markers: {
-              for (final m in visible)
-                Marker(
-                  markerId: MarkerId(m.id),
-                  position: LatLng(m.lat, m.lng),
-                  // Color + info window together communicate state so color
-                  // is never the only signal.
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    m.id == mapState.selectedId
-                        ? BitmapDescriptor.hueYellow
-                        : savedIds.contains(m.id)
-                        ? BitmapDescriptor.hueRed
-                        : visitedIds.contains(m.id)
-                        ? BitmapDescriptor.hueViolet
-                        : BitmapDescriptor.hueGreen,
-                  ),
-                  infoWindow: InfoWindow(
-                    title: m.name,
-                    snippet: [
-                      if (savedIds.contains(m.id)) 'Saved',
-                      if (visitedIds.contains(m.id)) 'Visited',
-                      countOf(m.recCount, 'rec'),
-                    ].join(' · '),
-                  ),
-                  onTap: () {
-                    ref.read(mapControllerProvider.notifier).select(m.id);
-                    unawaited(
-                      ref
-                          .read(analyticsProvider)
-                          .markerSelected(restaurantId: m.id),
-                    );
-                  },
-                ),
-            },
+            markers: _markers,
           ),
 
           // Top controls

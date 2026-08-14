@@ -22,6 +22,10 @@ class FirebaseAnalyticsServiceImpl implements AnalyticsService {
   Future<void> mapOpened() => _analytics.logEvent(name: 'map_opened');
 
   @override
+  Future<void> mapClusterOpened({required int count}) =>
+      _analytics.logEvent(name: 'map_cluster_opened', parameters: {'count': count});
+
+  @override
   Future<void> markerSelected({required String restaurantId}) =>
       _analytics.logEvent(
         name: 'marker_selected',

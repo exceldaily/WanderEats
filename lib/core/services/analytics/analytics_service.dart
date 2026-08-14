@@ -12,6 +12,10 @@ abstract class AnalyticsService {
   Future<void> onboardingCompleted();
   Future<void> mapOpened();
   Future<void> markerSelected({required String restaurantId});
+
+  /// Cluster taps carry only how many places were grouped - never where the
+  /// user was looking. Density is the useful signal; location is not ours.
+  Future<void> mapClusterOpened({required int count});
   Future<void> restaurantSaved({required String restaurantId});
   Future<void> restaurantVisited({required String restaurantId});
   Future<void> tasterFollowed({required String tasterId});
@@ -65,6 +69,9 @@ class DebugAnalyticsService implements AnalyticsService {
   @override
   Future<void> markerSelected({required String restaurantId}) =>
       _log('marker_selected', {'restaurant_id': restaurantId});
+  @override
+  Future<void> mapClusterOpened({required int count}) =>
+      _log('map_cluster_opened', {'count': count});
   @override
   Future<void> restaurantSaved({required String restaurantId}) =>
       _log('restaurant_saved', {'restaurant_id': restaurantId});

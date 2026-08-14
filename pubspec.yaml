@@ -73,6 +73,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    # WanderBites basemap styles. Applied to the map by theme brightness;
+    # markers themselves are drawn on canvas, so no pin images ship here.
+    - assets/map/
 
 # App icon generation. Every layer below is derived by tool/generate_icons.py
 # from the single source file branding/source/wanderbites_globe.png, so
