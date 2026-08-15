@@ -2,7 +2,7 @@
 description: "WanderBites - social travel map for food discovery. Follow people with great taste, discover unforgettable places."
 publish_to: 'none'
 
-version: 1.0.5+19
+version: 1.0.6+20
 
 environment:
   sdk: ^3.12.2
@@ -29,6 +29,12 @@ dependencies:
 
   # Backend
   supabase_flutter: ^2.9.0
+
+  # Sign in with Apple. Required by App Store guideline 4.8 wherever a
+  # third-party login (Google) is offered, and it must be the native sheet
+  # rather than a web view.
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.6
 
   # Billing. RevenueCat validates receipts with Apple/Google and reports to
   # the revenuecat-webhook edge function, which is the only writer of

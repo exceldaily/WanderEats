@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../../../core/errors/app_exception.dart';
@@ -59,13 +63,44 @@ class AuthRepository {
     }
   }
 
-  /// Apple sign-in slot for the iOS release; same OAuth flow.
+  /// Native Sign in with Apple.
+  ///
+  /// Uses Apple's own sheet and exchanges the resulting identity token with
+  /// Supabase, rather than the browser OAuth flow the Google path uses. On
+  /// iOS that distinction matters: guideline 4.8 expects the system sheet, and
+  /// a web view for Apple sign-in is what gets apps rejected.
+  ///
+  /// The nonce is sent to Apple hashed and to Supabase raw. Apple signs the
+  /// hash into the token, so Supabase can prove the token was minted for this
+  /// request and not replayed.
   Future<void> signInWithApple() async {
     try {
-      await _client.auth.signInWithOAuth(
-        sb.OAuthProvider.apple,
-        redirectTo: 'wanderbites://callback',
+      final rawNonce = _client.auth.generateRawNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
+
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw const AuthException('Apple did not return a sign-in token.');
+      }
+
+      await _client.auth.signInWithIdToken(
+        provider: sb.OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Cancelling is a choice, not a failure; surfacing an error for it would
+      // be noise.
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      throw AuthException('Apple sign-in did not complete.', cause: e);
     } on sb.AuthException catch (e) {
       throw AuthException(_friendly(e), cause: e);
     }

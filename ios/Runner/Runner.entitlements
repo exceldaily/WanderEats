@@ -16,5 +16,19 @@
 	     rather than changing this value. -->
 	<key>aps-environment</key>
 	<string>production</string>
+
+	<!-- Sign in with Apple. App Store guideline 4.8 requires an equivalent
+	     login option wherever a third-party login is offered, and WanderBites
+	     offers Google. Without this entitlement the native sheet fails at
+	     runtime with an authorization error rather than at build time, so a
+	     missing capability here looks like a broken button, not a config
+	     mistake.
+
+	     The matching capability must also be enabled on the App ID in the
+	     Apple Developer portal, or CI signing will reject the entitlement. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

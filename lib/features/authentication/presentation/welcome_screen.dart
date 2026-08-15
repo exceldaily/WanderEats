@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,33 @@ class WelcomeScreen extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
+              // Sign in with Apple sits above Google and matches its
+              // prominence: guideline 4.8 requires an equivalent option
+              // wherever a third-party login is offered. iOS only, because it
+              // is the platform where the system sheet exists and where the
+              // requirement applies.
+              if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                FilledButton.icon(
+                  onPressed: () async {
+                    try {
+                      await ref.read(authRepositoryProvider).signInWithApple();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.apple, size: 24),
+                  label: const Text('Continue with Apple'),
+                ),
+                const SizedBox(height: WbSpacing.sm),
+              ],
               FilledButton.icon(
                 onPressed: () async {
                   try {
