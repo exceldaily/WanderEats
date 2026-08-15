@@ -28,7 +28,9 @@
 #      Distribution, using the API key above - Codemagic keeps the private key
 #      on its side, so none of it has to be handled by hand), plus the App
 #      Store provisioning profile saved as "wanderbites_appstore_profile".
-#      The profile itself has to be created in Apple's portal first
+#      NOTE: the workflow now uses automatic signing, so the stored profile
+#      is no longer referenced. Kept in Codemagic for reference only.
+#      (Historic) The profile itself had to be created in Apple's portal first
 #      (developer.apple.com > Profiles > App Store), because Codemagic can
 #      fetch profiles but cannot create them. Fetch profiles pulls it in after.
 #
@@ -46,17 +48,23 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
-      # Signing files are referenced by the exact reference names they were
-      # saved under in Settings > Code signing identities. Referencing them by
-      # name rather than by `distribution_type`/`bundle_identifier` matching is
-      # deliberate: name lookup either finds the thing or says so plainly,
-      # where a type match that finds nothing produces "No matching profiles
-      # found", which reads like a signing bug rather than an empty shelf.
+      # Automatic signing through the App Store Connect API key above, rather
+      # than the hand-uploaded profile this used to reference by name.
+      #
+      # The named profile was captured once and then went stale: adding the
+      # Sign in with Apple capability to the App ID left the stored profile
+      # without the matching entitlement, and the build failed with
+      # "Provisioning profile ... doesn't include the Sign In with Apple
+      # capability". A stored profile cannot learn about a capability added
+      # after it was downloaded, so that failure would repeat on every future
+      # capability change.
+      #
+      # With distribution_type + bundle_identifier, Codemagic fetches or
+      # regenerates the profile from Apple at build time, so it always carries
+      # whatever the App ID currently has.
       ios_signing:
-        provisioning_profiles:
-          - wanderbites_appstore_profile
-        certificates:
-          - wanderbites_distribution
+        distribution_type: app_store
+        bundle_identifier: com.wanderbites.app
       groups:
         - wanderbites_prod
       flutter: stable
