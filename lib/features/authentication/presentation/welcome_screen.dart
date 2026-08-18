@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
+import '../../../core/services/flags/remote_flags.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/auth_repository.dart';
 
@@ -17,6 +18,13 @@ class WelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    // When the require-account flag is on, the router walls guests off the
+    // map, so tapping "Just browsing" would silently bounce back here - a
+    // dead button (Apple review, Aug 18). Hide it instead. Until the flag
+    // resolves this errs on showing the button, matching the router's
+    // fail-open behaviour.
+    final guestsBlocked =
+        ref.watch(requireAccountToBrowseProvider).value ?? false;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -96,11 +104,13 @@ class WelcomeScreen extends ConsumerWidget {
                 onPressed: () => context.goNamed(Routes.signIn),
                 child: Text(l10n.alreadyHaveAccount),
               ),
-              const SizedBox(height: WbSpacing.md),
-              TextButton(
-                onPressed: () => context.goNamed(Routes.map),
-                child: Text(l10n.justBrowsing),
-              ),
+              if (!guestsBlocked) ...[
+                const SizedBox(height: WbSpacing.md),
+                TextButton(
+                  onPressed: () => context.goNamed(Routes.map),
+                  child: Text(l10n.justBrowsing),
+                ),
+              ],
             ],
           ),
         ),

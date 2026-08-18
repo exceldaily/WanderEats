@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/services/flags/remote_flags.dart';
 import '../../features/admin/presentation/admin_screen.dart';
+import '../../features/authentication/presentation/auth_providers.dart';
 import '../../features/authentication/presentation/forgot_password_screen.dart';
 import '../../features/authentication/presentation/onboarding_screen.dart';
 import '../../features/authentication/presentation/register_screen.dart';
@@ -64,12 +65,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refresh.ping();
   });
 
+  // Same trick for the profile. A fresh Apple/Google sign-in happens
+  // mid-session with no app restart, so the splash "no profile -> onboarding"
+  // gate never runs; the redirect below closes that hole, and this ping makes
+  // it re-run once the profile query resolves.
+  ref.listen(needsOnboardingProvider, (_, _) {
+    refresh.ping();
+  });
+
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
       final signedIn = _hasSession();
       final path = state.uri.path;
+
+      // Signed in but no WanderBites profile: onboarding has not been
+      // completed. This is the state a brand-new Apple or Google sign-in
+      // lands in (Apple review, Aug 18: Settings errored because no profile
+      // row existed). Onboarding is also where date of birth is collected,
+      // so nothing else in the app may be reachable first. Only a query that
+      // SUCCEEDED with null counts: while loading, or after a network error,
+      // stay put rather than trapping an existing account in onboarding.
+      if (signedIn &&
+          path != '/onboarding' &&
+          path != '/splash' &&
+          ref.read(needsOnboardingProvider)) {
+        return '/onboarding';
+      }
+
       final guestsBlocked =
           ref.read(requireAccountToBrowseProvider).value ?? false;
       if (!signedIn &&
@@ -115,6 +139,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         name: Routes.onboarding,
+        // Guests have nothing to onboard: completing the form with no
+        // session would silently write nothing (the guest dead-end cousin
+        // of the missing-profile bug). Same guard as /settings.
+        redirect: (context, state) => _hasSession() ? null : '/welcome',
         builder: (_, _) => const OnboardingScreen(),
       ),
       StatefulShellRoute.indexedStack(

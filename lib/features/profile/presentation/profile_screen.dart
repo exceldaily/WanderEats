@@ -72,6 +72,17 @@ class ProfileScreen extends ConsumerWidget {
         ),
         data: (p) {
           if (p == null) {
+            // Two different nulls: a guest has no account at all, while a
+            // signed-in user without a profile abandoned onboarding partway.
+            final signedIn = ref.watch(isSignedInProvider);
+            if (!signedIn) {
+              return WbEmptyState(
+                icon: Icons.badge_outlined,
+                title: 'Sign in to build your taste profile',
+                actionLabel: 'Sign in',
+                onAction: () => context.goNamed(Routes.welcome),
+              );
+            }
             return WbEmptyState(
               icon: Icons.badge_outlined,
               title: 'Finish setting up your profile',
