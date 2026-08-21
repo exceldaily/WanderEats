@@ -1,23 +1,20 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../app/router/routes.dart';
 import '../../../app/theme/wb_tokens.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/analytics/analytics_service.dart';
-import '../../../core/storage/media_uploader.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../restaurants/data/reference_repository.dart';
 import 'auth_providers.dart';
 
-/// Visual, brief onboarding: identity -> birthday -> photo -> home city ->
-/// cuisines. Photo, city and cuisines are skippable; identity and birthday
-/// are not.
+/// Visual, brief onboarding: identity -> birthday -> home city -> cuisines.
+/// City and cuisines are skippable; identity and birthday are not.
+/// A profile photo is added later from Edit profile, where tapping the
+/// picker is user-initiated (App Review 5.1.1(iv): no permission priming).
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -28,7 +25,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   int _step = 0;
-  static const _stepCount = 5;
+  static const _stepCount = 4;
 
   /// The minimum age to use WanderBites at all. Mirrors the server's
   /// min_age_years(); the trigger on profile_private enforces it again.
@@ -38,7 +35,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _username = TextEditingController();
   final _bio = TextEditingController();
   DateTime? _birthDate;
-  File? _avatarFile;
   String? _homeCityId;
   final Set<String> _cuisineIds = {};
 
@@ -123,33 +119,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  Future<void> _pickAvatar() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
-    if (!mounted || picked == null) return;
-    setState(() => _avatarFile = File(picked.path));
-  }
-
   Future<void> _finish() async {
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      // Avatar upload is best-effort: a failed upload must never block
-      // account creation. The photo can be added later in Edit profile.
-      String? avatarUrl;
-      if (_avatarFile != null) {
-        try {
-          avatarUrl = await ref
-              .read(mediaUploaderProvider)
-              .uploadImage(file: _avatarFile!, kind: 'avatar');
-        } catch (_) {
-          avatarUrl = null;
-        }
-      }
       await ref
           .read(myProfileProvider.notifier)
           .completeOnboarding(
@@ -158,7 +133,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             bio: _bio.text.trim().isEmpty ? null : _bio.text.trim(),
             homeCityId: _homeCityId,
             favoriteCuisines: _cuisineIds.toList(),
-            avatarUrl: avatarUrl,
             dateOfBirth: _birthDate,
           );
       await ref.read(analyticsProvider).onboardingCompleted();
@@ -221,7 +195,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     _identityStep(theme),
                     _birthdayStep(theme),
-                    _photoStep(theme),
                     _cityStep(theme),
                     _cuisineStep(theme),
                   ],
@@ -378,40 +351,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _photoStep(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(WbSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('Add a profile photo', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: WbSpacing.lg),
-          InkWell(
-            onTap: _pickAvatar,
-            borderRadius: BorderRadius.circular(80),
-            child: CircleAvatar(
-              radius: 64,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              backgroundImage: _avatarFile == null
-                  ? null
-                  : FileImage(_avatarFile!),
-              child: _avatarFile == null
-                  ? const Icon(Icons.add_a_photo_outlined, size: 36)
-                  : null,
-            ),
-          ),
-          const SizedBox(height: WbSpacing.md),
-          TextButton(
-            onPressed: _pickAvatar,
-            child: Text(
-              _avatarFile == null ? 'Choose a photo' : 'Change photo',
-            ),
-          ),
-        ],
-      ),
     );
   }
 
